@@ -1,0 +1,81 @@
+basePath: /api/v1
+definitions:
+  model.User:
+    properties:
+      avarar_url:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:1234
+info:
+  contact: {}
+  description: This is go-gcs
+  title: go-gcs
+  version: "1.0"
+paths:
+  /api/v1:
+    get:
+      description: This endpoint is not yet implemented
+      produces:
+      - application/json
+      responses:
+        "501":
+          description: Not implemented
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Not implemented
+      tags:
+      - Unimplemented
+  /users/create:
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新用户，包含用户名、邮箱、密码和头像链接
+      parameters:
+      - description: 用户信息
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/model.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功返回用户信息
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 创建用户
+      tags:
+      - 用户模块
+schemes:
+- http
+- //
+- 支持的协议
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
