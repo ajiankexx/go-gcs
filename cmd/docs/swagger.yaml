@@ -1,5 +1,12 @@
 basePath: /api/v1
 definitions:
+  model.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
   model.User:
     properties:
       avarar_url:
@@ -20,21 +27,42 @@ info:
   title: go-gcs
   version: "1.0"
 paths:
-  /api/v1:
-    get:
-      description: This endpoint is not yet implemented
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: 用户登录接口，传入用户名和密码，返回 JWT Token
+      parameters:
+      - description: 登录请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginRequest'
       produces:
       - application/json
       responses:
-        "501":
-          description: Not implemented
+        "200":
+          description: 成功返回 token
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Not implemented
+        "400":
+          description: 请求参数格式错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 用户名或密码错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 用户登录
       tags:
-      - Unimplemented
+      - 用户认证
   /users/create:
     post:
       consumes:

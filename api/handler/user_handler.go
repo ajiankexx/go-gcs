@@ -48,7 +48,8 @@ func (r *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	user, err := r.Service.UpdateUser(c, &req)
+	ctx :=  c.Request.Context()
+	user, err := r.Service.UpdateUser(ctx, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})
 		return

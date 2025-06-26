@@ -24,9 +24,12 @@ func SetupUserRoutes(r *gin.RouterGroup) {
 		users.GET("get", handler.NotImplemented)
 	}
 
+	loginService := &service.LoginService{DAO: userDAO}
+	loginHandler := &handler.LoginHandler{LoginService: loginService}
+
 	login := r.Group("/login")
 	{
-		login.POST("", handler.NotImplemented)
+		login.POST("", loginHandler.Login)
 	}
 
 	register := r.Group("/register")

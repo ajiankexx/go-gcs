@@ -15,19 +15,51 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1": {
-            "get": {
-                "description": "This endpoint is not yet implemented",
+        "/login": {
+            "post": {
+                "description": "用户登录接口，传入用户名和密码，返回 JWT Token",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Unimplemented"
+                    "用户认证"
                 ],
-                "summary": "Not implemented",
+                "summary": "用户登录",
+                "parameters": [
+                    {
+                        "description": "登录请求体",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.LoginRequest"
+                        }
+                    }
+                ],
                 "responses": {
-                    "501": {
-                        "description": "Not implemented",
+                    "200": {
+                        "description": "成功返回 token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数格式错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "用户名或密码错误",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -92,6 +124,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "model.LoginRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "model.User": {
             "type": "object",
             "properties": {
