@@ -76,6 +76,12 @@ services:
     volumes:
       - redis_data:/data
     restart: unless-stopped
+  redisInsight:
+    image: redislabs/redisinsight:latest
+    container_name: redisInsight
+    ports:
+      - "5540:5540"
+    restart: unless-stopped
 
 volumes:
   kafka_data:
