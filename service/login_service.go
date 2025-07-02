@@ -21,7 +21,7 @@ func (r *LoginService) LoginVerifyPassword(ctx context.Context, req model.LoginR
 		// return appError.ErrUserNotFound
 	}
 	if user.Password != utils.Encrypt(req.PassWord) {
-		return appError.ErrPasswordInvalid
+		return appError.ErrorPasswordInvalid
 	}
 	return nil
 }
@@ -31,8 +31,10 @@ func (r *LoginService) Login(ctx context.Context, req *model.LoginRequest) (stri
 	if err != nil {
 		return "", err
 	}
-	token, err := auth.GenerateToken(req.UserName)
+	id, err := r.DAO.GetUserIDByUserName(ctx, req.UserName)
+	if err != nil {
+		return "", err
+	}
+	token, err := auth.GenerateToken(req.UserName, id)
 	return token, err
 }
-
-

@@ -1,4 +1,4 @@
-CREATE TABLE public.t_users (
+CREATE TABLE IF NOT EXISTS public.t_users (
     id BIGSERIAL PRIMARY KEY,   -- 使用 BIGSERIAL 自动生成自增的 ID
     username character varying(50) NOT NULL,
     email character varying(254) NOT NULL,

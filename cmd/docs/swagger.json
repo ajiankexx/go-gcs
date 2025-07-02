@@ -71,7 +71,7 @@
         },
         "/users/create": {
             "post": {
-                "description": "创建一个新用户，包含用户名、邮箱、密码和头像链接",
+                "description": "Create a new user",
                 "consumes": [
                     "application/json"
                 ],
@@ -79,9 +79,9 @@
                     "application/json"
                 ],
                 "tags": [
-                    "用户模块"
+                    "Users"
                 ],
-                "summary": "创建用户",
+                "summary": "Create user",
                 "parameters": [
                     {
                         "description": "用户信息",
@@ -120,12 +120,137 @@
                     }
                 }
             }
+        },
+        "/users/get-email-verification-code": {
+            "post": {
+                "description": "get an email verification code",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "get an email verification code",
+                "parameters": [
+                    {
+                        "description": "the struct for Sending Verification Code",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.SendEmail"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/users/update": {
+            "post": {
+                "description": "update user information",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "update user information",
+                "parameters": [
+                    {
+                        "description": "struct for update user",
+                        "name": "UpdateUser",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateUser"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authorization token (Bearer \u003ctoken\u003e)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/users/update-password-with-email-verification-code": {
+            "post": {
+                "description": "update password with email verification code",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "description": "struct for update password",
+                        "name": "UpdatePasswordWithOldPassword",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdatePasswordWithOldPassword"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/users/update-password-with-old-password": {
+            "post": {
+                "description": "update password with old password",
+                "tags": [
+                    "Users"
+                ],
+                "summary": "update password",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Authorization token (Bearer \u003ctoken\u003e)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
         }
     },
     "definitions": {
         "model.LoginRequest": {
             "type": "object",
             "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.SendEmail": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.UpdatePasswordWithOldPassword": {
+            "type": "object",
+            "properties": {
+                "new_password": {
+                    "type": "string"
+                },
+                "old_password": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.UpdateUser": {
+            "type": "object",
+            "properties": {
+                "avatar_url": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
                 "password": {
                     "type": "string"
                 },

@@ -7,6 +7,29 @@ definitions:
       username:
         type: string
     type: object
+  model.SendEmail:
+    properties:
+      email:
+        type: string
+    type: object
+  model.UpdatePasswordWithOldPassword:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+    type: object
+  model.UpdateUser:
+    properties:
+      avatar_url:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
   model.User:
     properties:
       avarar_url:
@@ -67,7 +90,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: 创建一个新用户，包含用户名、邮箱、密码和头像链接
+      description: Create a new user
       parameters:
       - description: 用户信息
         in: body
@@ -94,9 +117,69 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: 创建用户
+      summary: Create user
       tags:
-      - 用户模块
+      - Users
+  /users/get-email-verification-code:
+    post:
+      description: get an email verification code
+      parameters:
+      - description: the struct for Sending Verification Code
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.SendEmail'
+      responses: {}
+      summary: get an email verification code
+      tags:
+      - Users
+  /users/update:
+    post:
+      description: update user information
+      parameters:
+      - description: struct for update user
+        in: body
+        name: UpdateUser
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateUser'
+      - description: Authorization token (Bearer <token>)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      responses: {}
+      summary: update user information
+      tags:
+      - Users
+  /users/update-password-with-email-verification-code:
+    post:
+      description: update password with email verification code
+      parameters:
+      - description: struct for update password
+        in: body
+        name: UpdatePasswordWithOldPassword
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdatePasswordWithOldPassword'
+      responses: {}
+      summary: Reset password
+      tags:
+      - Users
+  /users/update-password-with-old-password:
+    post:
+      description: update password with old password
+      parameters:
+      - description: Authorization token (Bearer <token>)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      responses: {}
+      summary: update password
+      tags:
+      - Users
 schemes:
 - http
 - //

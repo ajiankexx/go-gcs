@@ -2,6 +2,7 @@ package router
 
 import (
 	"go-gcs/api/handler"
+	"go-gcs/middleware"
 	"go-gcs/dao"
 	"go-gcs/service"
 	"go-gcs/utils"
@@ -17,12 +18,17 @@ func SetupUserRoutes(r *gin.RouterGroup) {
 	userHandler := &handler.UserHandler{Service: userService}
 
 	users := r.Group("/users")
+	users.POST("create", userHandler.CreateUser)
+	users.POST("get-email-verification-code", userHandler.SendVerfificationCode)
+
+	authUsers := r.Group("/users")
+	authUsers.Use(middleware.AuthMiddleware())
 	{
-		users.POST("create", userHandler.CreateUser)
-		users.POST("update", userHandler.UpdateUser)
-		users.POST("delete", handler.NotImplemented)
-		users.GET("get", handler.NotImplemented)
+		authUsers.POST("update", userHandler.UpdateUser)
+		authUsers.POST("delete", handler.NotImplemented)
+		authUsers.GET("get", handler.NotImplemented)
 	}
+
 
 	loginService := &service.LoginService{DAO: userDAO}
 	loginHandler := &handler.LoginHandler{LoginService: loginService}

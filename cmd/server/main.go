@@ -1,8 +1,10 @@
 package main
 
 import (
-	"log"
 	"go-gcs/api/router"
+	"go-gcs/model"
+	"go-gcs/mq"
+	"log"
 
 	_ "go-gcs/cmd/docs"
 
@@ -22,6 +24,10 @@ import (
 // @in header
 // @name Authorization
 func main() {
+	// email_message := &model.EmailMessage{Topic: "email-sender", Addr: "localhost:9200"}
+	email_process := mq.EmailReader{EmailMessage: &model.EmailMessage{}}
+	go email_process.ReadMessage()
+
 	r := router.RouterSetup()
 	r.GET("/swagger/*any", ginSwagger.WrapHandler((swaggerFiles.Handler)))
 	port := ":1234"
