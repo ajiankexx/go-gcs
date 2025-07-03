@@ -14,4 +14,8 @@ var (
 	ErrorEmailSend = errors.New("email send error")
 
 	ErrorLabel = errors.New("this is a label of error")
+	ErrorRedisNotFoundKey = errors.New("not found key in redis")
+	ErrorWrongVerifyCode = errors.New("wrong verify code")
+	ErrorExpiredVerifyCode = errors.New("Vefify Code has expired")
+
 )

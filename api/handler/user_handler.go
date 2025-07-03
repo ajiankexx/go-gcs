@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"errors"
 	"go-gcs/model"
 	"go-gcs/service"
-	"go-gcs/utils"
+
 	"net/http"
 	"reflect"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -140,8 +140,31 @@ func (r *UserHandler) UpdatePasswordWithEmailVerificationCode(c *gin.Context) {
 // @Tags Users
 // @Router /users/get-email-verification-code [post]
 // @Param request body model.SendEmail true "the struct for Sending Verification Code"
-func (r *UserHandler) SendVerfificationCode(c *gin.Context) {
+func (r *UserHandler) SendVerificationCode(c *gin.Context) {
 	req := &model.SendEmail{}
+	err := r.ValidateUser(c, req)
+	// req.IP = c.ClientIP()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
+
+	ctx := c.Request.Context()
+	err = r.Service.SendVerificationCode(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"Status": "Email send successful"})
+}
+
+// @Summary upload email and verification code
+// @Description veirify code
+// @Tags Users
+// @Router /users/upload-email-and-verifycode [post]
+// @Param request body model.EmailAndVerifyCode true "the struct for upload email and verifycode"
+func (r *UserHandler) UploadEmailAndVerifyCode(c *gin.Context) {
+	req := &model.EmailAndVerifyCode{}
 	err := r.ValidateUser(c, req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
@@ -149,19 +172,10 @@ func (r *UserHandler) SendVerfificationCode(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-
-	verificationCode, _ := utils.GenVerifyCode()
-	email_msg := &model.EmailMessage{
-		Email:req.Email, 
-		Topic: "email-sender", 
-		Addr: "localhost:9092",
-		VerificationCode: verificationCode,
-	}
-
-	err = r.Service.SendVerificationCode(ctx, email_msg)
+	err = r.Service.UploadEmailAndVerifyCode(ctx, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error_here": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"Status": "Email send successful"})
+	c.JSON(http.StatusOK, gin.H{"Status": "Verify Successful"})
 }

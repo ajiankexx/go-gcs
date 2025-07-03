@@ -210,9 +210,41 @@ const docTemplate = `{
                 ],
                 "responses": {}
             }
+        },
+        "/users/upload-email-and-verifycode": {
+            "post": {
+                "description": "veirify code",
+                "tags": [
+                    "users"
+                ],
+                "summary": "upload email and verification code",
+                "parameters": [
+                    {
+                        "description": "the struct for upload email and verifycode",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.EmailAndVerifyCode"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
         }
     },
     "definitions": {
+        "model.EmailAndVerifyCode": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "verify_code": {
+                    "type": "string"
+                }
+            }
+        },
         "model.LoginRequest": {
             "type": "object",
             "properties": {

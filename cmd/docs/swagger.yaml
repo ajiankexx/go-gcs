@@ -1,5 +1,12 @@
 basePath: /api/v1
 definitions:
+  model.EmailAndVerifyCode:
+    properties:
+      email:
+        type: string
+      verify_code:
+        type: string
+    type: object
   model.LoginRequest:
     properties:
       password:
@@ -180,6 +187,20 @@ paths:
       summary: update password
       tags:
       - Users
+  /users/upload-email-and-verifycode:
+    post:
+      description: veirify code
+      parameters:
+      - description: the struct for upload email and verifycode
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/model.EmailAndVerifyCode'
+      responses: {}
+      summary: upload email and verification code
+      tags:
+      - users
 schemes:
 - http
 - //

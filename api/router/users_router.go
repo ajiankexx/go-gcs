@@ -11,15 +11,14 @@ import (
 )
 
 func SetupUserRoutes(r *gin.RouterGroup) {
-	utils.InitDB("postgres://admin:1234@localhost:5432/gcs_db")
-
 	userDAO := &dao.UserDB{DB: utils.GetDBConn()}
 	userService := &service.UserService{DAO: userDAO}
 	userHandler := &handler.UserHandler{Service: userService}
 
 	users := r.Group("/users")
 	users.POST("create", userHandler.CreateUser)
-	users.POST("get-email-verification-code", userHandler.SendVerfificationCode)
+	users.POST("get-email-verification-code", userHandler.SendVerificationCode)
+	users.POST("upload-email-and-verifycode", userHandler.UploadEmailAndVerifyCode)
 
 	authUsers := r.Group("/users")
 	authUsers.Use(middleware.AuthMiddleware())
