@@ -4,6 +4,7 @@ import(
 )
 
 var (
+	ErrorUser = errors.New("error about User")
 	ErrorUserNotFound = errors.New("user not found")
 	ErrorPasswordInvalid = errors.New("invalid password")
 	ErrorUserAlreadyExists = errors.New("user already exists")
