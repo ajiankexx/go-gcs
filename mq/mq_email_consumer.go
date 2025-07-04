@@ -1,11 +1,13 @@
 package mq
 
 import (
-	"go-gcs/model"
 	"context"
 	"encoding/json"
-	"github.com/segmentio/kafka-go"
+	"go-gcs/model"
 	"go-gcs/utils"
+	"time"
+
+	"github.com/segmentio/kafka-go"
 )
 
 type EmailReader struct {
@@ -16,8 +18,10 @@ func (r *EmailReader) ReadMessage() {
 	reader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: []string{"localhost:9092"},
 		Topic: "email-sender",
+		GroupID: "email-consumer",
 		Partition: 0,
 		MaxBytes: 10e6,
+		CommitInterval: time.Second,
 	})
 
 	for {
