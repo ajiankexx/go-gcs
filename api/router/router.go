@@ -16,6 +16,7 @@ func RouterSetup() *gin.Engine {
 	v1 := r.Group(ALL_API_PREFIX)
 	{
 		SetupUserRoutes(v1)
+		SetupRepositoryRoutes(v1)
 	}
 	return r
 }
