@@ -2,3 +2,5 @@
 cmd/docs/*
 cmd/test/*
 docs
+go.mod
+go.sum
