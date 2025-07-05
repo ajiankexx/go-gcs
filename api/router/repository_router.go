@@ -14,7 +14,7 @@ import (
 var REPO_API_PROFIX = constants.REPO_API_PREFIX
 
 func SetupRepositoryRoutes(r *gin.RouterGroup) {
-	repoDAO := &dao.RepoDB{DB: utils.GetDBConn()}
+	repoDAO := &dao.RepoDB{DB: utils.GetDBPool()}
 	repoService := &service.RepoService{DAO: repoDAO}
 	repoHandler := &handler.RepoHandler{Service: repoService}
 

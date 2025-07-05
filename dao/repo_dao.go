@@ -6,11 +6,11 @@ import (
 	"go-gcs/appError"
 	"go-gcs/model"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type RepoDB struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
 
@@ -38,7 +38,7 @@ func (r *RepoDB) CreateRepo(ctx context.Context, Repo *model.Repo, UserId string
 	if exists {
 		return appError.ErrorRepoAlreadyExist
 	}
-	query := `insert into public.t_repository(repository_name, repository_desciption,
+	query := `insert into public.t_repository(repository_name, repository_description,
 		is_private, user_id) values ($1, $2, $3, $4) returning id`
 	return r.DB.QueryRow(ctx, query, Repo.RepoName, Repo.RepoDesc, Repo.IsPrivate, UserId).
 		Scan(&Repo.ID)

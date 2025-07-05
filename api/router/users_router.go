@@ -15,7 +15,7 @@ var USER_API_PREFIX = constants.USER_API_PREFIX
 var LOGIN_API_PREFIX = constants.LOGIN_API_PREFIX
 
 func SetupUserRoutes(r *gin.RouterGroup) {
-	userDAO := &dao.UserDB{DB: utils.GetDBConn()}
+	userDAO := &dao.UserDB{DB: utils.GetDBPool()}
 	userService := &service.UserService{DAO: userDAO}
 	userHandler := &handler.UserHandler{Service: userService}
 

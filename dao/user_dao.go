@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5"
 	"go-gcs/model"
 	"errors"
@@ -9,7 +10,7 @@ import (
 )
 
 type UserDB struct {
-	DB *pgx.Conn
+	DB *pgxpool.Pool
 }
 
 func (r *UserDB) Create(ctx context.Context, user *model.User) error {
