@@ -20,7 +20,7 @@ func (r *UserDB) Create(ctx context.Context, user *model.UserDTO) error {
 }
 
 func (r *UserDB) GetUserByName(ctx context.Context, username string) (*model.UserDTO, error) {
-	query := `SELECT username, email, avatar_url FROM public.t_users WHERE username = $1` //BUG: pubulic -> public
+	query := `SELECT username, email, user_password, avatar_url FROM public.t_users WHERE username = $1` //BUG: pubulic -> public
 	row := r.DB.QueryRow(ctx, query, username)
 	var user model.UserDTO
 	err := row.Scan(
@@ -40,12 +40,13 @@ func (r *UserDB) GetUserByName(ctx context.Context, username string) (*model.Use
 }
 
 func (r *UserDB) GetUserByID(ctx context.Context, ID string) (*model.UserDTO, error) {
-	query := `SELECT username, email, avatar_url FROM public.t_users WHERE id = $1`
+	query := `SELECT username, email, user_password, avatar_url FROM public.t_users WHERE id = $1`
 	row := r.DB.QueryRow(ctx, query, ID)
 	var user model.UserDTO
 	err := row.Scan(
 		&user.Username,
 		&user.Email,
+		&user.Password,
 		&user.AvatarURL,
 	)
 
