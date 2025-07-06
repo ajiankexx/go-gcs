@@ -4,7 +4,9 @@ import (
 	"go-gcs/api/router"
 	"go-gcs/model"
 	"go-gcs/mq"
-	"log"
+	"go-gcs/logger"
+
+	"go.uber.org/zap"
 
 	_ "go-gcs/cmd/docs"
 
@@ -28,9 +30,11 @@ func main() {
 	email_process := mq.EmailReader{EmailMessage: &model.EmailMessageDTO{}}
 	go email_process.ReadMessage()
 
+	logger.InitLogger()
+
 	r := router.RouterSetup()
 	r.GET("/swagger/*any", ginSwagger.WrapHandler((swaggerFiles.Handler)))
 	port := ":1234"
-	log.Printf("Server starting on port http://localhost%s/api/v1/users", port)
+	zap.L().Info("🚀 Server starting...", zap.String("port", port))
 	r.Run(":1234")
 }
