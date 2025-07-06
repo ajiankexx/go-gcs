@@ -26,7 +26,7 @@ func (r *RepoDB) IsExists(ctx context.Context, RepoName string, UserId int64) (b
 	)
 	`
 	// Todo: more type of err may happen
-	err := r.DB.QueryRow(ctx, query, RepoName, UserId)
+	err := r.DB.QueryRow(ctx, query, RepoName, UserId).Scan(&exists)
 	if err != nil {
 		return false, appError.ErrorRepoNotExist
 	}
@@ -69,10 +69,11 @@ func (r *RepoDB) GetRepoByName(ctx context.Context, RepoName string, UserId int6
 
 func (r *RepoDB) UpdateRepo(ctx context.Context, Repo *model.UpdateRepoDTO, UserId int64) (error) {
 	query := `update public.t_repository
-			  set repository_name $1,
-				  repository_description $2
-				  is_private $3
-				  user_id $4
+			  set repository_name = $1,
+				  repository_description = $2
+				  is_private = $3
+				  user_id = $4
+			  where id = $5
 	`
 
 	_, err := r.DB.Exec(ctx, query, 

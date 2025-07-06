@@ -23,7 +23,10 @@ type CreateRepoDTO struct {
 // embedding struct
 // temporarily, for each route and http method, define a struct to receive request data
 type UpdateRepoDTO struct {
-	CreateRepoDTO
+	ID int64 `json:"id"`
+	RepoName string `json:"repository_name"`
+	RepoDesc string `json:"repository_description"`
+	IsPrivate bool `json:"is_private"`
 }
 
 

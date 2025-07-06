@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"go-gcs/appError"
 	"go-gcs/model"
 	"go-gcs/service"
 	"go-gcs/utils"
@@ -43,7 +44,11 @@ func (r *RepoHandler) CreateRepo(c *gin.Context) {
 	}
 	err = r.Service.CreateRepo(ctx, req, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if err == appError.ErrorRepoAlreadyExist {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

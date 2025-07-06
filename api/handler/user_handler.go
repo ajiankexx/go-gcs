@@ -1,12 +1,13 @@
 package handler
 
 import (
+	"go-gcs/appError"
 	"go-gcs/model"
 	"go-gcs/service"
 
+	"errors"
 	"net/http"
 	"reflect"
-	"errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,7 +23,6 @@ func (r *UserHandler) ValidateUser(c *gin.Context, tgt any) error {
 	}
 	return c.ShouldBindBodyWithJSON(tgt)
 }
-
 
 // Create godoc
 // @Summary Create user
@@ -45,12 +45,16 @@ func (r *UserHandler) CreateUser(c *gin.Context) {
 	ctx := c.Request.Context()
 	userVO, err := r.Service.CreateUser(ctx, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if err == appError.ErrorUserAlreadyExists {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"msg": "user created",
+		"msg":  "user created",
 		"user": userVO,
 	})
 }
@@ -74,7 +78,7 @@ func (r *UserHandler) UpdateUser(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing id"})
 		return
 	}
-	ctx :=  c.Request.Context()
+	ctx := c.Request.Context()
 	id, exists := rawId.(int64)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "id type error"})
@@ -82,12 +86,12 @@ func (r *UserHandler) UpdateUser(c *gin.Context) {
 	}
 	userVO, err := r.Service.UpdateUser(ctx, req, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"msg": "user updated",
+		"msg":  "user updated",
 		"user": userVO,
 	})
 }
@@ -122,7 +126,7 @@ func (r *UserHandler) UpdatePasswordWithOldPassword(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"Status":"Successful"})
+	c.JSON(http.StatusOK, gin.H{"Status": "Successful"})
 }
 
 // @Summary Reset password
