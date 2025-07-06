@@ -30,20 +30,20 @@ func (r *UserHandler) ValidateUser(c *gin.Context, tgt any) error {
 // @Tags Users
 // @Accept json
 // @Produce json
-// @Param user body model.User true "用户信息"
-// @Success 200 {object} model.User "创建成功返回用户信息"
+// @Param user body model.UserDTO true "用户信息"
+// @Success 200 {object} model.UserDTO "创建成功返回用户信息"
 // @Failure 400 {object} map[string]string "请求参数错误"
 // @Failure 500 {object} map[string]string "服务器内部错误"
 // @Router /users/create [post]
 func (r *UserHandler) CreateUser(c *gin.Context) {
-	req := &model.User{}
+	req := &model.UserDTO{}
 	err := r.ValidateUser(c, req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	ctx := c.Request.Context()
-	user, err := r.Service.CreateUser(ctx, req)
+	userVO, err := r.Service.CreateUser(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -51,7 +51,7 @@ func (r *UserHandler) CreateUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"msg": "user created",
-		"user": user,
+		"user": userVO,
 	})
 }
 
@@ -59,10 +59,10 @@ func (r *UserHandler) CreateUser(c *gin.Context) {
 // @Description update user information
 // @Tags Users
 // @Router /users/update [post]
-// @Param UpdateUser body model.UpdateUser true "struct for update user"
+// @Param UpdateUser body model.UpdateUserDTO true "struct for update user"
 // @Param Authorization header string true "Authorization token (Bearer <token>)"
 func (r *UserHandler) UpdateUser(c *gin.Context) {
-	req := &model.UpdateUser{}
+	req := &model.UpdateUserDTO{}
 	err := r.ValidateUser(c, req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
@@ -80,7 +80,7 @@ func (r *UserHandler) UpdateUser(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "id type error"})
 		return
 	}
-	user, err := r.Service.UpdateUser(ctx, req, idStr)
+	userVO, err := r.Service.UpdateUser(ctx, req, idStr)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})
 		return
@@ -88,7 +88,7 @@ func (r *UserHandler) UpdateUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"msg": "user updated",
-		"user": user,
+		"user": userVO,
 	})
 }
 
@@ -96,9 +96,10 @@ func (r *UserHandler) UpdateUser(c *gin.Context) {
 // @Description update password with old password
 // @Tags Users
 // @Router /users/update-password-with-old-password [post]
+// @Param UpdatePassword body model.UpdatePasswordWithOldPasswordDTO true "the struct for update password"
 // @Param Authorization header string true "Authorization token (Bearer <token>)"
 func (r *UserHandler) UpdatePasswordWithOldPassword(c *gin.Context) {
-	req := &model.UpdatePasswordWithOldPassword{}
+	req := &model.UpdatePasswordWithOldPasswordDTO{}
 	err := r.ValidateUser(c, req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
@@ -127,7 +128,7 @@ func (r *UserHandler) UpdatePasswordWithOldPassword(c *gin.Context) {
 // @Summary Reset password
 // @Description update password with email verification code
 // @Tags Users
-// @Param UpdatePasswordWithOldPassword body model.UpdatePasswordWithOldPassword  true "struct for update password"
+// @Param UpdatePasswordWithOldPassword body model.UpdatePasswordWithOldPasswordDTO  true "struct for update password"
 // @Router /users/update-password-with-email-verification-code [post]
 func (r *UserHandler) UpdatePasswordWithEmailVerificationCode(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
@@ -139,9 +140,9 @@ func (r *UserHandler) UpdatePasswordWithEmailVerificationCode(c *gin.Context) {
 // @Description get an email verification code
 // @Tags Users
 // @Router /users/get-email-verification-code [post]
-// @Param request body model.SendEmail true "the struct for Sending Verification Code"
+// @Param request body model.SendEmailDTO true "the struct for Sending Verification Code"
 func (r *UserHandler) SendVerificationCode(c *gin.Context) {
-	req := &model.SendEmail{}
+	req := &model.SendEmailDTO{}
 	err := r.ValidateUser(c, req)
 	// req.IP = c.ClientIP()
 	if err != nil {
@@ -162,9 +163,9 @@ func (r *UserHandler) SendVerificationCode(c *gin.Context) {
 // @Description veirify code
 // @Tags Users
 // @Router /users/upload-email-and-verifycode [post]
-// @Param request body model.EmailAndVerifyCode true "the struct for upload email and verifycode"
+// @Param request body model.EmailAndVerifyCodeDTO true "the struct for upload email and verifycode"
 func (r *UserHandler) UploadEmailAndVerifyCode(c *gin.Context) {
-	req := &model.EmailAndVerifyCode{}
+	req := &model.EmailAndVerifyCodeDTO{}
 	err := r.ValidateUser(c, req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err})

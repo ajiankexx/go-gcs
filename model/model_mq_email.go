@@ -2,7 +2,7 @@ package model
 
 import ()
 
-type EmailMessage struct {
+type EmailMessageDTO struct {
 	Name             string `json:"name"`
 	Email            string `json:"to"`
 	Subject          string `json:"subject"`

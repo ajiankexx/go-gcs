@@ -25,7 +25,7 @@ import (
 // @name Authorization
 func main() {
 	// email_message := &model.EmailMessage{Topic: "email-sender", Addr: "localhost:9200"}
-	email_process := mq.EmailReader{EmailMessage: &model.EmailMessage{}}
+	email_process := mq.EmailReader{EmailMessage: &model.EmailMessageDTO{}}
 	go email_process.ReadMessage()
 
 	r := router.RouterSetup()

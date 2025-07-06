@@ -13,17 +13,17 @@ type UserDB struct {
 	DB *pgxpool.Pool
 }
 
-func (r *UserDB) Create(ctx context.Context, user *model.User) error {
+func (r *UserDB) Create(ctx context.Context, user *model.UserDTO) error {
 	query := `INSERT INTO public.t_users(username, email, user_password, avatar_url) VALUES ($1, $2, $3, $4) RETURNING id`
-	return r.DB.QueryRow(ctx, query, user.Username, user.Email, user.Password, user.AvatarURL).Scan(&user.ID)
+	_, err := r.DB.Exec(ctx, query, user.Username, user.Email, user.Password, user.AvatarURL)
+	return err
 }
 
-func (r *UserDB) GetUserByName(ctx context.Context, username string) (*model.User, error) {
-	query := `SELECT id, username, email, user_password, avatar_url FROM public.t_users WHERE username = $1` //BUG: pubulic -> public
+func (r *UserDB) GetUserByName(ctx context.Context, username string) (*model.UserDTO, error) {
+	query := `SELECT username, email, avatar_url FROM public.t_users WHERE username = $1` //BUG: pubulic -> public
 	row := r.DB.QueryRow(ctx, query, username)
-	var user model.User
+	var user model.UserDTO
 	err := row.Scan(
-		&user.ID,
 		&user.Username,
 		&user.Email,
 		&user.Password,
@@ -39,15 +39,13 @@ func (r *UserDB) GetUserByName(ctx context.Context, username string) (*model.Use
 	return &user, nil
 }
 
-func (r *UserDB) GetUserByID(ctx context.Context, ID string) (*model.User, error) {
-	query := `SELECT id, username, email, user_password, avatar_url FROM public.t_users WHERE id = $1`
+func (r *UserDB) GetUserByID(ctx context.Context, ID string) (*model.UserDTO, error) {
+	query := `SELECT username, email, avatar_url FROM public.t_users WHERE id = $1`
 	row := r.DB.QueryRow(ctx, query, ID)
-	var user model.User
+	var user model.UserDTO
 	err := row.Scan(
-		&user.ID,
 		&user.Username,
 		&user.Email,
-		&user.Password,
 		&user.AvatarURL,
 	)
 
@@ -77,7 +75,7 @@ func (r *UserDB) GetUserIDByUserName(ctx context.Context, username string) (stri
 	return id, nil
 }
 
-func (r *UserDB) UpdateUser(ctx context.Context, user *model.User) error {
+func (r *UserDB) UpdateUser(ctx context.Context, user *model.UserDTO) error {
 	query := `
 		UPDATE public.t_users
 		SET username = $1,
@@ -92,7 +90,6 @@ func (r *UserDB) UpdateUser(ctx context.Context, user *model.User) error {
 		user.Email,
 		user.Password,
 		user.AvatarURL,
-		user.ID,
 	)
 	return err
 }

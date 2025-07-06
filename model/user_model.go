@@ -4,7 +4,8 @@ import (
 	"time"
 )
 
-type User struct {
+// temporarily don't add gmt_created, gmt_updated, gmt_deleted to UserDTO
+type UserDO struct {
 	ID        int64  `json:"id"`
 	Username  string `json:"username"`
 	Email     string `json:"email"`
@@ -12,29 +13,43 @@ type User struct {
 	AvatarURL string `json:"avarar_url"`
 }
 
-type UpdateUser struct {
-	Username  *string `json:"username, omitempty"`
-	Email     *string `json:"email, omitempty"`
-	Password  *string `json:"password, omitempty"`
-	AvatarURL *string `json:"avatar_url, omitempty"`
+type UserDTO struct {
+	ID        int64  `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	AvatarURL string `json:"avatar_url"`
 }
 
-type UpdatePasswordWithOldPassword struct {
+type UpdateUserDTO struct {
+	Username  *string `json:"username"`
+	Email     *string `json:"email"`
+	Password  *string `json:"password"`
+	AvatarURL *string `json:"avatar_url"`
+}
+
+type UserVO struct {
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	AvatarURL string `json:"avatar_url"`
+}
+
+type UpdatePasswordWithOldPasswordDTO struct {
 	OldPassword string `json:"old_password"`
 	NewPassword string `json:"new_password"`
 }
 
-type SendEmail struct {
+type SendEmailDTO struct {
 	Email string `json:"email"`
 	// IP string `json:"ip"` //TODO: maybe changed later
 }
 
-type EmailAndVerifyCode struct {
+type EmailAndVerifyCodeDTO struct {
 	Email      string `json:"email"`
 	VerifyCode string `json:"verify_code"`
 }
 
-type VerifiyCodeInfo struct {
+type VerifiyCodeInfoDTO struct {
 	CreatedAt time.Time `json:"created_at"`
 	ExpiredAt time.Time `json:"expired_at"`
 	Email     string    `json:"email"`

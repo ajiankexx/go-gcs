@@ -18,13 +18,13 @@ type LoginHandler struct {
 // @Tags         用户认证
 // @Accept       json
 // @Produce      json
-// @Param        request body model.LoginRequest true "登录请求体"
+// @Param        request body model.LoginRequestDTO true "登录请求体"
 // @Success      200 {object} map[string]string "成功返回 token"
 // @Failure      400 {object} map[string]string "请求参数格式错误"
 // @Failure      401 {object} map[string]string "用户名或密码错误"
 // @Router       /login [post]
 func (r *LoginHandler) Login(c *gin.Context) {
-	var req model.LoginRequest
+	var req model.LoginRequestDTO
 	if err := c.ShouldBindBodyWithJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

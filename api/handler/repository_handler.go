@@ -19,11 +19,11 @@ type RepoHandler struct {
 // @Tags         Repository
 // @Accept       json
 // @Produce      json
-// @Param        repoInfo  body  model.Repo  true  "仓库信息（名称、描述、是否私有、地址等）"
+// @Param        repoInfo  body  model.CreateRepoDTO  true  "仓库信息（名称、描述、是否私有、地址等）"
 // @Param Authorization header string true "Authorization token (Bearer <token>)"
 // @Router       /repository/create [post]
 func (r *RepoHandler) CreateRepo(c *gin.Context) {
-	req := &model.Repo{}
+	req := &model.CreateRepoDTO{}
 	err := utils.ValidateReq(c, req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -57,10 +57,10 @@ func (r *RepoHandler) CreateRepo(c *gin.Context) {
 // @Tags         Repository
 // @Accept       json
 // @Produce      json
-// @Param        repoInfo  body  model.UpdateRepo  true  "仓库信息（名称、描述、是否私有、地址等）"
+// @Param        repoInfo  body  model.UpdateRepoDTO  true  "仓库信息（名称、描述、是否私有、地址等）"
 // @Router       /repository/update [post]
 func (r *RepoHandler) UpdateRepo(c *gin.Context) {
-	req := &model.UpdateRepo{}
+	req := &model.UpdateRepoDTO{}
 	err := utils.ValidateReq(c, req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

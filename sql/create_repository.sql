@@ -1,5 +1,5 @@
 create table public.t_repository (
-    id bigint not null,
+    id bigserial primary key,
     repository_name character varying(255) not null,
     repository_description character varying(255) not null,
     is_private boolean default false,

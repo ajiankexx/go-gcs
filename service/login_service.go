@@ -14,7 +14,7 @@ type LoginService struct {
 	DAO *dao.UserDB
 }
 
-func (r *LoginService) LoginVerifyPassword(ctx context.Context, req model.LoginRequest) error {
+func (r *LoginService) LoginVerifyPassword(ctx context.Context, req model.LoginRequestDTO) error {
 	user, err := r.DAO.GetUserByName(ctx, req.UserName)
 	if err != nil {
 		return err
@@ -26,7 +26,7 @@ func (r *LoginService) LoginVerifyPassword(ctx context.Context, req model.LoginR
 	return nil
 }
 
-func (r *LoginService) Login(ctx context.Context, req *model.LoginRequest) (string, error) {
+func (r *LoginService) Login(ctx context.Context, req *model.LoginRequestDTO) (string, error) {
 	err := r.LoginVerifyPassword(ctx, *req)
 	if err != nil {
 		return "", err

@@ -11,7 +11,7 @@ import (
 )
 
 type EmailSender struct {
-	EmailMessage *model.EmailMessage
+	EmailMessage *model.EmailMessageDTO
 }
 
 func (r *EmailSender) SendMessage() error {

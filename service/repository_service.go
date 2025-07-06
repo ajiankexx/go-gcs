@@ -12,7 +12,7 @@ type RepoService struct {
 	DAO *dao.RepoDB
 }
 
-func (r *RepoService) CreateRepo(ctx context.Context, req *model.Repo, userId string) (error) {
+func (r *RepoService) CreateRepo(ctx context.Context, req *model.CreateRepoDTO, userId string) (error) {
 	exist, _ := r.DAO.IsExists(ctx, req.RepoName, userId)
 	if exist {
 		return appError.ErrorRepoAlreadyExist
@@ -21,7 +21,7 @@ func (r *RepoService) CreateRepo(ctx context.Context, req *model.Repo, userId st
 	return err
 }
 
-func (r *RepoService) UpdateRepo(ctx context.Context, req *model.UpdateRepo, userId string) (error) {
+func (r *RepoService) UpdateRepo(ctx context.Context, req *model.UpdateRepoDTO, userId string) (error) {
 	exist, _ := r.DAO.IsExists(ctx, req.RepoName, userId)
 	if !exist {
 		return appError.ErrorRepoNotExist

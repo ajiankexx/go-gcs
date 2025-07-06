@@ -11,7 +11,7 @@ import (
 )
 
 type EmailReader struct {
-	EmailMessage *model.EmailMessage
+	EmailMessage *model.EmailMessageDTO
 }
 
 func (r *EmailReader) ReadMessage() {
@@ -30,7 +30,7 @@ func (r *EmailReader) ReadMessage() {
 			continue
 		}
 
-		var msg model.EmailMessage
+		var msg model.EmailMessageDTO
 		if err := json.Unmarshal(m.Value, &msg); err != nil {
 			continue
 		}

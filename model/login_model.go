@@ -1,6 +1,6 @@
 package model
 
-type LoginRequest struct {
+type LoginRequestDTO struct {
 	UserName string `json:"username"`
 	PassWord string `json:"password"`
 }
