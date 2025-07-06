@@ -22,7 +22,7 @@ func (r *RepoService) CreateRepo(ctx context.Context, req *model.CreateRepoDTO, 
 	if exist {
 		return appError.ErrorRepoAlreadyExist
 	}
-	var repoDO *model.RepoDO
+	repoDO := &model.RepoDO{}
 	err := copier.Copy(repoDO, req)
 	if err != nil {
 		return err

@@ -22,7 +22,7 @@ func (r *UserDB) Create(ctx context.Context, user *model.UserDTO) error {
 func (r *UserDB) GetUserByName(ctx context.Context, username string) (*model.UserDTO, error) {
 	query := `SELECT username, email, user_password, avatar_url FROM public.t_users WHERE username = $1` //BUG: pubulic -> public
 	row := r.DB.QueryRow(ctx, query, username)
-	var user model.UserDTO
+	user := &model.UserDTO{}
 	err := row.Scan(
 		&user.Username,
 		&user.Email,
@@ -36,13 +36,13 @@ func (r *UserDB) GetUserByName(ctx context.Context, username string) (*model.Use
 		}
 		return nil, err
 	}
-	return &user, nil
+	return user, nil
 }
 
 func (r *UserDB) GetUserByID(ctx context.Context, ID int64) (*model.UserDTO, error) {
 	query := `SELECT username, email, user_password, avatar_url FROM public.t_users WHERE id = $1`
 	row := r.DB.QueryRow(ctx, query, ID)
-	var user model.UserDTO
+	user := &model.UserDTO{}
 	err := row.Scan(
 		&user.Username,
 		&user.Email,
@@ -56,7 +56,7 @@ func (r *UserDB) GetUserByID(ctx context.Context, ID int64) (*model.UserDTO, err
 		}
 		return nil, err
 	}
-	return &user, nil
+	return user, nil
 }
 
 func (r *UserDB) GetUserIDByUserName(ctx context.Context, username string) (*int64, error) {
