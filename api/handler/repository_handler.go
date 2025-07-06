@@ -36,12 +36,12 @@ func (r *RepoHandler) CreateRepo(c *gin.Context) {
 		return
 	}
 	ctx := c.Request.Context()
-	idStr, exists := userId.(string)
+	id, exists := userId.(int64)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "id type error"})
 		return
 	}
-	err = r.Service.CreateRepo(ctx, req, idStr)
+	err = r.Service.CreateRepo(ctx, req, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -74,12 +74,12 @@ func (r *RepoHandler) UpdateRepo(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	idStr, exists := userId.(string)
+	id, exists := userId.(int64)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "id type error"})
 		return
 	}
-	err = r.Service.UpdateRepo(ctx, req, idStr)
+	err = r.Service.UpdateRepo(ctx, req, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -11,11 +11,11 @@ var jwtSecret = []byte("your-secret-key")
 
 type Claims struct {
 	Username string `json:"username"`
-	ID string `json:"id"`
+	ID int64 `json:"id"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(username string, id string) (string, error) {
+func GenerateToken(username string, id int64) (string, error) {
 	claims := Claims{
 		Username: username,
 		ID: id,

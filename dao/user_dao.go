@@ -39,7 +39,7 @@ func (r *UserDB) GetUserByName(ctx context.Context, username string) (*model.Use
 	return &user, nil
 }
 
-func (r *UserDB) GetUserByID(ctx context.Context, ID string) (*model.UserDTO, error) {
+func (r *UserDB) GetUserByID(ctx context.Context, ID int64) (*model.UserDTO, error) {
 	query := `SELECT username, email, user_password, avatar_url FROM public.t_users WHERE id = $1`
 	row := r.DB.QueryRow(ctx, query, ID)
 	var user model.UserDTO
@@ -59,21 +59,21 @@ func (r *UserDB) GetUserByID(ctx context.Context, ID string) (*model.UserDTO, er
 	return &user, nil
 }
 
-func (r *UserDB) GetUserIDByUserName(ctx context.Context, username string) (string, error) {
+func (r *UserDB) GetUserIDByUserName(ctx context.Context, username string) (*int64, error) {
 	query := `SELECT id FROM public.t_users WHERE username = $1`
 	row := r.DB.QueryRow(ctx, query, username)
-	var id string
+	var id int64
 	err := row.Scan(
 		&id,
 	)
 
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return "", errors.New("ErrNoRows")
+			return nil, errors.New("ErrNoRows")
 		}
-		return "", err
+		return nil, err
 	}
-	return id, nil
+	return &id, nil
 }
 
 func (r *UserDB) UpdateUser(ctx context.Context, user *model.UserDTO) error {

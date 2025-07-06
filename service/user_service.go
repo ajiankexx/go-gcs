@@ -43,7 +43,7 @@ func (r *UserService) CreateUser(ctx context.Context, req *model.UserDTO) (*mode
 // however, currently not consider about what should be returned in this request.
 
 // maybe, in go, for front-end received data, we should use a stuct whose component var are pointer.
-func (r *UserService) UpdateUser(ctx context.Context, req *model.UpdateUserDTO, id string) (*model.UserVO, error) {
+func (r *UserService) UpdateUser(ctx context.Context, req *model.UpdateUserDTO, id int64) (*model.UserVO, error) {
 	data, err := r.DAO.GetUserByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (r *UserService) UpdateUser(ctx context.Context, req *model.UpdateUserDTO, 
 }
 
 // all data received from front-end maybe processed with a struct whose var is pointer, not value
-func (r *UserService) UpdatePasswordWithOldPassword(ctx context.Context, req *model.UpdatePasswordWithOldPasswordDTO, id string) error {
+func (r *UserService) UpdatePasswordWithOldPassword(ctx context.Context, req *model.UpdatePasswordWithOldPasswordDTO, id int64) error {
 	user, err := r.DAO.GetUserByID(ctx, id)
 	if err != nil {
 		return err

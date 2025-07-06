@@ -69,18 +69,18 @@ func (r *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	id, Ok := c.Get("id")
+	rawId, Ok := c.Get("id")
 	if !Ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing id"})
 		return
 	}
 	ctx :=  c.Request.Context()
-	idStr, exists := id.(string)
+	id, exists := rawId.(int64)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "id type error"})
 		return
 	}
-	userVO, err := r.Service.UpdateUser(ctx, req, idStr)
+	userVO, err := r.Service.UpdateUser(ctx, req, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})
 		return
@@ -106,18 +106,18 @@ func (r *UserHandler) UpdatePasswordWithOldPassword(c *gin.Context) {
 		return
 	}
 
-	id, Ok := c.Get("id")
+	rawId, Ok := c.Get("id")
 	if !Ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing id"})
 		return
 	}
 	ctx := c.Request.Context()
-	idStr, exists := id.(string)
+	id, exists := rawId.(int64)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "id type error"})
 		return
 	}
-	err = r.Service.UpdatePasswordWithOldPassword(ctx, req, idStr)
+	err = r.Service.UpdatePasswordWithOldPassword(ctx, req, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
