@@ -25,4 +25,5 @@ var (
 	ErrorRepository = errors.New("error about Repository")
 	ErrorRepoNotExist = errors.New("repository not exist")
 	ErrorRepoAlreadyExist = errors.New("repository already exist")
+	ErrorRepoIDIsEmpty = errors.New("repository id can't be empty")
 )

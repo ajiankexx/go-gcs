@@ -63,6 +63,7 @@ func (r *RepoHandler) CreateRepo(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        repoInfo  body  model.UpdateRepoDTO  true  "仓库信息（名称、描述、是否私有、地址等）"
+// @Param Authorization header string true "Authorization token (Bearer <token>)"
 // @Router       /repository/update [post]
 func (r *RepoHandler) UpdateRepo(c *gin.Context) {
 	req := &model.UpdateRepoDTO{}
