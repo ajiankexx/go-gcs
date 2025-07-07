@@ -26,4 +26,8 @@ var (
 	ErrorRepoNotExist = errors.New("repository not exist")
 	ErrorRepoAlreadyExist = errors.New("repository already exist")
 	ErrorRepoIDIsEmpty = errors.New("repository id can't be empty")
+
+	ErrorFileAlreadyExists = errors.New("file already exists")
+	ErrorCreateFileFailed = errors.New("create file failed")
+	ErrorWriteFileFailed = errors.New("write file failed")
 )
