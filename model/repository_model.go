@@ -1,5 +1,6 @@
 package model
 
+// 8:55
 type RepoDO struct {
 	ID        int64  `json:"id"`
 	RepoName  string `json:"repository_name"`

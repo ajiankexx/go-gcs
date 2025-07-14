@@ -27,6 +27,9 @@ var (
 	ErrorRepoAlreadyExist = errors.New("repository already exist")
 	ErrorRepoIDIsEmpty = errors.New("repository id can't be empty")
 
+	ErrorSshKeyNotExist = errors.New("ssh key not exist")
+	ErrorSshKeyAlreadyExist = errors.New("ssh key already exist")
+
 	ErrorFileAlreadyExists = errors.New("file already exists")
 	ErrorCreateFileFailed = errors.New("create file failed")
 	ErrorWriteFileFailed = errors.New("write file failed")

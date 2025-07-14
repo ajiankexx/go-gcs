@@ -17,6 +17,7 @@ func RouterSetup() *gin.Engine {
 	{
 		SetupUserRoutes(v1)
 		SetupRepositoryRoutes(v1)
+		SetupSshKeyRoutes(v1)
 	}
 	return r
 }

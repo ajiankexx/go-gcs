@@ -14,6 +14,7 @@ var (
 	REPO_API_PREFIX = "/repository"
 	USER_API_PREFIX = "/users"
 	LOGIN_API_PREFIX = "/login"
+	SSH_KEY_API_PROFIX = "/ssh"
 )
 
 var (
