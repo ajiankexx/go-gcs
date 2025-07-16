@@ -1,3 +1,4 @@
+
 package router
 
 import (
@@ -14,16 +15,13 @@ import (
 var SSH_KEY_API_PROFIX = constants.SSH_KEY_API_PROFIX
 
 func SetupSshKeyRoutes(r *gin.RouterGroup) {
-	sshDAO := &dao.SshDB{DB: utils.GetDBPool()}
-	sshService := &service.SshService{DAO: sshDAO}
-	sshHandler := &handler.SshHandler{Service: sshService}
+	sshKeyDAO := &dao.SshKeyDB{DB: utils.GetGormDB()}
+	sshKeyService := &service.SshKeyService{SshKeyDAO: sshKeyDAO}
+	sshHandler := &handler.SshHandler{Service: sshKeyService}
 
 	ssh := r.Group(SSH_KEY_API_PROFIX)
 	ssh.Use(middleware.AuthMiddleware())
-	ssh.POST("upload", sshHandler.UploadSsh)
-	ssh.POST("update", sshHandler.UpdateSsh)
-	ssh.GET("ssh-key-publickey", sshHandler.GetSshPublicKey)
-	ssh.GET("ssh-key-name", sshHandler.GetSshKeyName)
-	ssh.GET("page", sshHandler.Page)
+	ssh.POST("upload", sshHandler.UploadSshKey)
+	ssh.POST("update", sshHandler.UpdateSshKey)
 	ssh.DELETE("delete", sshHandler.DeleteSshKey)
 }
