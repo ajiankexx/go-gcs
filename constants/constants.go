@@ -25,7 +25,7 @@ var (
 )
 
 var (
-	GIT_PRIVATE_KEY             = "~/gitolite-admin"
+	GIT_PRIVATE_KEY             = "~/.ssh/id_rsa"
 	GIT_SERVER_USERNAME         = "git"
 	GIT_SERVER_HOME             = "/home/git"
 	GIT_SERVER_DOMAIN           = ""
