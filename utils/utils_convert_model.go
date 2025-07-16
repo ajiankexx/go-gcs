@@ -6,7 +6,7 @@ import (
 
 func ConvertUserDTOToUserVO(d *model.UserDTO) (*model.UserVO) {
 	return &model.UserVO{
-		Username: d.Username,
+		UserName: d.UserName,
 		Email: d.Email,
 		AvatarURL: d.AvatarURL,
 	}

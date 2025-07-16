@@ -8,7 +8,7 @@ import (
 type User struct {
 	ID int `json:"id"`
 	Name string `json:"name"`
-	Email string `json: "email"`
+	Email string `json:"email"`
 }
 
 // NotImplemented returns a standard response for unimplemented routes

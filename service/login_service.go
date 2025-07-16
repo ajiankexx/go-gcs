@@ -16,7 +16,7 @@ type LoginService struct {
 }
 
 func (r *LoginService) LoginVerifyPassword(ctx context.Context, req model.LoginRequestDTO) error {
-	user, err := r.DAO.GetUserByName(ctx, req.UserName)
+	user, err := r.DAO.GetUserByUserName(ctx, req.UserName)
 	if err != nil {
 		zap.L().Error("LoginVerifyPassword() failed", zap.Error(err))
 		return err
@@ -34,12 +34,12 @@ func (r *LoginService) Login(ctx context.Context, req *model.LoginRequestDTO) (s
 		zap.L().Error("Login() failed", zap.Error(err))
 		return "", err
 	}
-	var id *int64
-	id, err = r.DAO.GetUserIDByUserName(ctx, req.UserName)
+	var id int64
+	id, err = r.DAO.GetUserIdByUserName(ctx, req.UserName)
 	if err != nil {
 		zap.L().Error("Login() failed", zap.Error(err))
 		return "", err
 	}
-	token, err := auth.GenerateToken(req.UserName, *id)
+	token, err := auth.GenerateToken(req.UserName, id)
 	return token, err
 }

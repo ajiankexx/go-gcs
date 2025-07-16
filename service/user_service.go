@@ -7,6 +7,7 @@ import (
 	"go-gcs/model"
 	"go-gcs/mq"
 	"go-gcs/utils"
+	"github.com/jinzhu/copier"
 
 	"context"
 	"encoding/json"
@@ -25,14 +26,18 @@ type UserService struct {
 func (r *UserService) CreateUser(ctx context.Context, req *model.UserDTO) (*model.UserVO, error) {
 	req.Password = utils.Encrypt(req.Password)
 
-	userDTO, err := r.DAO.GetUserByName(ctx, req.Username)
+	userDO, err := r.DAO.GetUserByUserName(ctx, req.UserName)
 	if err == nil {
-		return utils.ConvertUserDTOToUserVO(userDTO), appError.ErrorUserAlreadyExists
+		var userVO model.UserVO
+		copier.Copy(userVO, userDO)
+		return &userVO, appError.ErrorUserAlreadyExists
 	} else if err != appError.ErrorUserNotFound {
 		return nil, err
 	}
+	userDO = &model.UserDO{}
+	copier.Copy(userDO, req)
 
-	err = r.DAO.Create(ctx, req)
+	err = r.DAO.CreateUser(ctx, userDO)
 	if err != nil {
 		return nil, err
 	}
@@ -44,36 +49,23 @@ func (r *UserService) CreateUser(ctx context.Context, req *model.UserDTO) (*mode
 
 // maybe, in go, for front-end received data, we should use a stuct whose component var are pointer.
 func (r *UserService) UpdateUser(ctx context.Context, req *model.UpdateUserDTO, id int64) (*model.UserVO, error) {
-	data, err := r.DAO.GetUserByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	//when we use *model.UpdateUser for this operation, all keywords in it is a pointer, so we can
-	//quickly distinguish which keywords is empty and which is not set by user
-
-	//Below we assume all keywords can't be empty
-	if req.Username != nil {
-		if *req.Username == "" {
+	if req.UserName != nil {
+		if *req.UserName == "" {
 			return nil, errors.New("username can't be empty")
-		} else {
-			data.Username = *req.Username
 		}
 	}
 
 	if req.Email != nil {
 		if *req.Email == "" {
 			return nil, errors.New("email can't be empty")
-		} else {
-			data.Email = *req.Email
 		}
 	}
 
 	if req.AvatarURL != nil {
 		if *req.AvatarURL == "" {
 			return nil, errors.New("AvatarURL can't be empty")
-		} else {
-			data.AvatarURL = *req.AvatarURL
 		}
+		
 	}
 
 	if req.Password != nil {
@@ -83,16 +75,26 @@ func (r *UserService) UpdateUser(ctx context.Context, req *model.UpdateUserDTO, 
 		}
 	}
 
-	err = r.DAO.UpdateUser(ctx, data)
+	userDO, err := r.DAO.GetUserByUserId(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return utils.ConvertUserDTOToUserVO(data), nil
+	updateUserDO := model.UpdateUserDO{UpdateUserDTO: *req}
+	updateUserMap := utils.StructToMap(updateUserDO, "gorm")
+	userId, _ := utils.ReadFromContext[int64](ctx, "userId")
+	err = r.DAO.UpdateUser(ctx, updateUserMap, userId)
+	if err != nil {
+		return nil, err
+	}
+	userDO, err = r.DAO.GetUserByUserId(ctx, userId)
+	userVO := model.UserVO{}
+	copier.Copy(userVO, userDO)
+	return &userVO, nil
 }
 
 // all data received from front-end maybe processed with a struct whose var is pointer, not value
 func (r *UserService) UpdatePasswordWithOldPassword(ctx context.Context, req *model.UpdatePasswordWithOldPasswordDTO, id int64) error {
-	user, err := r.DAO.GetUserByID(ctx, id)
+	user, err := r.DAO.GetUserByUserId(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -106,8 +108,12 @@ func (r *UserService) UpdatePasswordWithOldPassword(ctx context.Context, req *mo
 	if req.NewPassword == "" {
 		return appError.ErrorInvalidPassword
 	}
+	userId, _ := utils.ReadFromContext[int64](ctx, "userId")
 	user.Password = utils.Encrypt(req.NewPassword)
-	err = r.DAO.UpdateUser(ctx, user)
+	updateUserDO := model.UpdateRepoDO{}
+	updateUserDO.Password = utils.LiteralPtr(utils.Encrypt(req.NewPassword))
+	updateUserMap := utils.StructToMap(updateUserDO, "gorm")
+	err = r.DAO.UpdateUser(ctx, updateUserMap, userId)
 	if err != nil {
 		return err
 	}

@@ -11,6 +11,18 @@ type UserDB struct {
 	DB *gorm.DB
 }
 
+func (r *UserDB) GetUserByUserId(ctx context.Context, userId int64) (*model.UserDO, error) {
+	var userDO model.UserDO
+	err := r.DB.WithContext(ctx).
+		Model(model.UserDO{}).
+		Where("id = ?", userId).
+		Scan(&userDO).Error
+	if err != nil {
+		return nil, err
+	}
+	return &userDO, nil
+}
+
 func (r *UserDB) GetUserByUserName(ctx context.Context, userName string) (*model.UserDO, error) {
 	var userDO model.UserDO
 	err := r.DB.WithContext(ctx).
@@ -128,6 +140,13 @@ func (r *RepoDB) CreateRepo(ctx context.Context, repo *model.RepoDO, userId int6
 	return err
 }
 
+func (r *RepoDB) UpdateRepo(ctx context.Context, updateRepoMap map[string]interface{}, userId int64) error {
+	err := r.DB.WithContext(ctx).
+		Model(&model.RepoDO{}).
+		Updates(updateRepoMap).Error
+	return err
+}
+
 func (r *RepoDB) GetRepoByID(ctx context.Context, repoId int64) (*model.RepoDO, error) {
 	var repoDO model.RepoDO
 	err := r.DB.WithContext(ctx).
@@ -186,4 +205,12 @@ func (r *SshKeyDB) GetSshKeyNameBySshKeyId(ctx context.Context, sshKeyId int64) 
 		Where("id = ?", sshKeyId).
 		Pluck("name", sshKeyName).Error
 	return sshKeyName, err
+}
+
+func (r *SshKeyDB) DeleteSshKey(ctx context.Context, sshKeyName string, userId int64) error {
+	err := r.DB.WithContext(ctx).
+		Model(model.SshKeyDO{}).
+		Where("user_id = ? AND name = ?", userId, sshKeyName).
+		Delete(model.SshKeyDO{}).Error
+	return err
 }

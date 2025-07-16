@@ -5,6 +5,7 @@ import (
 	"go-gcs/dao"
 	"go-gcs/model"
 	"go-gcs/utils"
+	"go.uber.org/zap"
 
 	"context"
 
@@ -18,7 +19,7 @@ type RepoService struct {
 
 // store user and repo infomation may reduce complexity
 func (r *RepoService) CreateRepo(ctx context.Context, req *model.CreateRepoDTO, userId int64) (error) {
-	exist, _ := r.RepoDAO.IsExists(ctx, req.RepoName, userId)
+	exist, _ := r.RepoDAO.RepoExists(ctx, req.RepoName, userId)
 	if exist {
 		return appError.ErrorRepoAlreadyExist
 	}
@@ -27,47 +28,33 @@ func (r *RepoService) CreateRepo(ctx context.Context, req *model.CreateRepoDTO, 
 	if err != nil {
 		return err
 	}
-	repoDO.User_id = userId
-	user, _ := r.UserDAO.GetUserByID(ctx, userId)
-	repoDO.Https_url = utils.GenerateHttpURL("localhost", 1234, user.Username, req.RepoName)
-	repoDO.Ssh_url = utils.GenerateSshURL("localhost", 1234, user.Username, req.RepoName)
+	repoDO.UserId = userId
+	user, _ := r.UserDAO.GetUserByUserId(ctx, userId)
+	repoDO.HttpsUrl = utils.GenerateHttpURL("localhost", 1234, user.UserName, req.RepoName)
+	repoDO.SshUrl = utils.GenerateSshURL("localhost", 1234, user.UserName, req.RepoName)
 	err = r.RepoDAO.CreateRepo(ctx, repoDO, userId)
-	return err
+	return nil
 }
 
-func (r *RepoService) UpdateRepo(ctx context.Context, req *model.UpdateRepoDTO, userId int64) error {
-	if req.ID == nil {
+func (r *RepoService) UpdateRepo(ctx context.Context, req *model.UpdateRepoDTO) error {
+	userId, ok := utils.ReadFromContext[int64](ctx, "userId")
+	if !ok {
+		zap.L().Error("failed to get user ID", zap.Error(appError.ErrorUserIdNotFound))
+		return appError.ErrorUserIdNotFound
+	}
+	if req.Id == nil {
 		return appError.ErrorRepoIDIsEmpty
 	}
 
-	repoDO, err := r.RepoDAO.GetRepoByID(ctx, *req.ID)
-	if err != nil {
-		return err
-	}
-
-	updateRepoDO := &model.UpdateRepoDO{
-		ID:        repoDO.ID,
-		RepoName:  repoDO.RepoName,
-		RepoDesc:  repoDO.RepoDesc,
-		IsPrivate: repoDO.IsPrivate,
-		Https_url: repoDO.Https_url,
-		Ssh_url:   repoDO.Ssh_url,
-		User_id:   repoDO.User_id,
-	}
-
-	userDTO, err := r.UserDAO.GetUserByID(ctx, userId)
+	updateRepoDO := &model.UpdateRepoDO{UpdateRepoDTO: *req}
 	if req.RepoName != nil {
-		updateRepoDO.RepoName = *req.RepoName
-		updateRepoDO.Https_url = utils.GenerateHttpURL("localhost", 1234, userDTO.Username, *req.RepoName)
-		updateRepoDO.Ssh_url = utils.GenerateSshURL("localhost", 1234, userDTO.Username, *req.RepoName)
+		userDO, _ := r.UserDAO.GetUserByUserId(ctx, userId)
+		httpUrl := utils.GenerateHttpURL("localhost", 1234, userDO.UserName, *req.RepoName)
+		sshUrl := utils.GenerateSshURL("localhost", 1234, userDO.UserName, *req.RepoName)
+		updateRepoDO.HttpsUrl = &httpUrl
+		updateRepoDO.SshUrl = &sshUrl
 	}
-	if req.RepoDesc != nil {
-		updateRepoDO.RepoDesc = *req.RepoDesc
-	}
-	if req.IsPrivate != nil {
-		updateRepoDO.IsPrivate = *req.IsPrivate
-	}
-
-	err = r.RepoDAO.UpdateRepo(ctx, updateRepoDO)
+	updateRepoMap := utils.StructToMap(updateRepoDO, "gorm")
+	err := r.RepoDAO.UpdateRepo(ctx, updateRepoMap, userId)
 	return err
 }

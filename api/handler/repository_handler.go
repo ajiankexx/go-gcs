@@ -72,20 +72,8 @@ func (r *RepoHandler) UpdateRepo(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	userId, ok := c.Get("id")
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing id"})
-		return
-	}
-
 	ctx := c.Request.Context()
-	id, exists := userId.(int64)
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "id type error"})
-		return
-	}
-	err = r.Service.UpdateRepo(ctx, req, id)
+	err = r.Service.UpdateRepo(ctx, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

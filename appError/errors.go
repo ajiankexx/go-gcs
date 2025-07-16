@@ -6,6 +6,7 @@ import(
 var (
 	ErrorUser = errors.New("error about User")
 	ErrorUserNotFound = errors.New("user not found")
+	ErrorUserIdNotFound = errors.New("failed to get user ID")
 	ErrorPasswordInvalid = errors.New("invalid password")
 	ErrorUserAlreadyExists = errors.New("user already exists")
 	ErrorWrongPassword = errors.New("wrong password")

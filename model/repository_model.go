@@ -38,4 +38,5 @@ type UpdateRepoDO struct {
 	UpdateRepoDTO
 	HttpsUrl *string `gorm:"column:https_url" json:"https_url"`
 	SshUrl   *string `gorm:"column:ssh_url" json:"ssh_url"`
+	Password *string
 }

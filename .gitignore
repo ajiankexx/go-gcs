@@ -4,3 +4,4 @@ cmd/test/*
 docs
 go.mod
 go.sum
+sh
