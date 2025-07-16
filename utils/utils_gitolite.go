@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
@@ -9,9 +10,11 @@ import (
 	"strings"
 	"time"
 
+	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"go-gcs/appError"
 	"go-gcs/constants"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/ssh"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -20,18 +23,30 @@ import (
 type GitoliteUtils struct {
 }
 
+var (
+	sshAuth *gitssh.PublicKeys
+)
+
+func init() {
+	zap.L().Info("init in gitolite executed")
+	os.MkdirAll(expandHomeDir(constants.GITOLITE_USER_CONF_DIR_PATH), 0755)
+	os.MkdirAll(expandHomeDir(constants.GITOLITE_REPOSITORY_CONF_DIR_PATH), 0755)
+	os.MkdirAll(expandHomeDir(constants.GITOLITE_KEY_DIR_PATH), 0755)
+	sshAuth, _ = newPublicKeyAuth("git", constants.GIT_PRIVATE_KEY)
+}
+
 func (r *GitoliteUtils) InitUserConfig(userId int64) error {
 	userFileName := fmt.Sprintf("%d.conf", userId)
-	userConfPath := constants.GITOLITE_CONF_DIR_PATH + userFileName
+	userConfPath := expandHomeDir(path.Join(constants.GITOLITE_USER_CONF_DIR_PATH, userFileName))
 
 	if _, err := os.Stat(userConfPath); err == nil {
-		zap.L().Error("file already exist when init user conf file")
+		zap.L().Error("file already exist when init user conf file", zap.Error(err))
 		return appError.ErrorFileAlreadyExists
 	}
 
 	file, err := os.Create(userConfPath)
 	if err != nil {
-		zap.L().Error("create user config file failed")
+		zap.L().Error("create user config file failed", zap.Error(err))
 		return appError.ErrorCreateFileFailed
 	}
 	defer file.Close()
@@ -53,38 +68,38 @@ repo @%d_public_repo
 }
 
 func (r *GitoliteUtils) GetSshKeyFIlePath(sshKeyId int64) (string, error) {
-	return path.Join(
+	return expandHomeDir(path.Join(
 		constants.GITOLITE_KEY_DIR_PATH,
 		fmt.Sprintf("%d.pub", sshKeyId),
-	), nil
+	)), nil
 }
 
 func (r *GitoliteUtils) GetUserFilePath(userId int64) (string, error) {
-	return path.Join(
+	return expandHomeDir(path.Join(
 		constants.GITOLITE_USER_CONF_DIR_PATH,
 		fmt.Sprintf("%d.conf", userId),
-	), nil
+	)), nil
 }
 
 func (r *GitoliteUtils) GetRepoFilePath(repoId int64) (string, error) {
-	return path.Join(
+	return expandHomeDir(path.Join(
 		constants.GITOLITE_REPOSITORY_CONF_DIR_PATH,
 		fmt.Sprintf("%d.conf", repoId),
-	), nil
+	)), nil
 }
 
-func (r *GitoliteUtils) AddSshKey(sshKeyId int64, sshKey string, userId int64) error {
+func (r *GitoliteUtils) AddSshKey(ctx context.Context, sshKeyId int64, sshKey string, userId int64) error {
 	sshKeyFilePath, _ := r.GetSshKeyFIlePath(sshKeyId)
 	userFilePath, err := r.GetUserFilePath(userId)
 
 	if _, err := os.Stat(sshKeyFilePath); err == nil {
-		zap.L().Error("this id of SshKey file already exist")
+		zap.L().Error("this id of SshKey file already exist", zap.Error(err))
 		return appError.ErrorFileAlreadyExists
 	}
 
 	sshKeyFile, err := os.Create(sshKeyFilePath)
 	if err != nil {
-		zap.L().Error("create SshKey file failed")
+		zap.L().Error("create SshKey file failed", zap.Error(err))
 		return appError.ErrorCreateFileFailed
 	}
 	defer sshKeyFile.Close()
@@ -92,7 +107,7 @@ func (r *GitoliteUtils) AddSshKey(sshKeyId int64, sshKey string, userId int64) e
 
 	userFile, err := os.ReadFile(userFilePath)
 	if err != nil {
-		zap.L().Error("read user config file failed")
+		zap.L().Error("read user config file failed", zap.Error(err))
 		return err
 	}
 	lines := strings.Split(string(userFile), "\n")
@@ -110,7 +125,7 @@ func (r *GitoliteUtils) AddSshKey(sshKeyId int64, sshKey string, userId int64) e
 		newContent := strings.Join(lines, "\n")
 		err = os.WriteFile(userFilePath, []byte(newContent), 0644)
 		if err != nil {
-			zap.L().Error("when write updated user config file, error happens")
+			zap.L().Error("when write updated user config file, error happens", zap.Error(err))
 			return err
 		}
 	}
@@ -127,31 +142,32 @@ func (r *GitoliteUtils) AddSshKey(sshKeyId int64, sshKey string, userId int64) e
 	commitFiles = append(commitFiles, file1)
 	commitFiles = append(commitFiles, file2)
 	err = r.CommitAndPush(
+		ctx,
 		constants.GITOLITE_ADMIN_REPOSITORY_PATH,
 		commitMessage,
 		commitFiles,
 	)
 	if err != nil {
-		zap.L().Error(fmt.Sprintf("Error: %s. Error get when run CommitAndPush.", err.Error()))
+		zap.L().Error(fmt.Sprintf("Error: %s. Error get when run CommitAndPush.", err.Error()), zap.Error(err))
 	}
 	return nil
 }
 
-func (r *GitoliteUtils) RemoveSshKey(sshKeyId int64, userId int64) error {
+func (r *GitoliteUtils) RemoveSshKey(ctx context.Context, sshKeyId int64, userId int64) error {
 	sshKeyFilePath, _ := r.GetSshKeyFIlePath(sshKeyId)
 	userFilePath, _ := r.GetUserFilePath(userId)
 	if _, err := os.Stat(sshKeyFilePath); err != nil {
-		zap.L().Warn("Try to remove an non-existed sshKey")
+		zap.L().Warn("Try to remove an non-existed sshKey", zap.Error(err))
 		return err
 	}
 	err := os.Remove(sshKeyFilePath)
 	if err != nil {
-		zap.L().Error(fmt.Sprintf("Error: %s", err.Error()))
+		zap.L().Error(fmt.Sprintf("Error: %s", err.Error()), zap.Error(err))
 		return err
 	}
 	userFile, err := os.ReadFile(userFilePath)
 	if err != nil {
-		zap.L().Error(err.Error())
+		zap.L().Error(err.Error(), zap.Error(err))
 	}
 	lines := strings.Split(string(userFile), "n")
 	updated := false
@@ -166,7 +182,7 @@ func (r *GitoliteUtils) RemoveSshKey(sshKeyId int64, userId int64) error {
 		var newContent = strings.Join(lines, "\n")
 		err := os.WriteFile(userFilePath, []byte(newContent), 0644)
 		if err != nil {
-			zap.L().Error(err.Error())
+			zap.L().Error(err.Error(), zap.Error(err))
 			return err
 		}
 	}
@@ -184,12 +200,13 @@ func (r *GitoliteUtils) RemoveSshKey(sshKeyId int64, userId int64) error {
 	commitFiles = append(commitFiles, file1)
 	commitFiles = append(commitFiles, file2)
 	err = r.CommitAndPush(
+		ctx,
 		constants.GITOLITE_ADMIN_REPOSITORY_PATH,
 		commitMessage,
 		commitFiles,
 	)
 	if err != nil {
-		zap.L().Error(fmt.Sprintf("Error: %s. Error get when run CommitAndPush.", err.Error()))
+		zap.L().Error(fmt.Sprintf("Error: %s. Error get when run CommitAndPush.", err.Error()), zap.Error(err))
 	}
 	return nil
 }
@@ -199,12 +216,12 @@ func (r *GitoliteUtils) RemoveSshKey(sshKeyId int64, userId int64) error {
 func (r *GitoliteUtils) UpdateSshKey(sshKeyId int64, sshKey string) error {
 	sshKeyFilePath, _ := r.GetSshKeyFIlePath(sshKeyId)
 	if _, err := os.Stat(sshKeyFilePath); err != nil {
-		zap.L().Error("no ssh key exists")
+		zap.L().Error("no ssh key exists", zap.Error(err))
 		return err
 	}
 	err := os.WriteFile(sshKeyFilePath, []byte(sshKey), 0644)
 	if err != nil {
-		zap.L().Error("update ssh key failed")
+		zap.L().Error("update ssh key failed", zap.Error(err))
 		return err
 	}
 	return nil
@@ -212,17 +229,17 @@ func (r *GitoliteUtils) UpdateSshKey(sshKeyId int64, sshKey string) error {
 
 // there are serious concurrency problem
 // 36
-func (r *GitoliteUtils) CreateRepository(repoId int64, repoName string, isPrivate bool,
+func (r *GitoliteUtils) CreateRepository(ctx context.Context, repoId int64, repoName string, isPrivate bool,
 	userId int64, userName string) error {
 	userFilePath, _ := r.GetUserFilePath(userId)
 	repoFilePath, _ := r.GetRepoFilePath(repoId)
 	if _, err := os.Stat(repoFilePath); err == nil {
-		zap.L().Error("detected duplicate repository")
+		zap.L().Error("detected duplicate repository", zap.Error(err))
 		return err
 	}
 	repoFile, err := os.Create(repoFilePath)
 	if err != nil {
-		zap.L().Error("create repository config file failed")
+		zap.L().Error("create repository config file failed", zap.Error(err))
 		return err
 	}
 	content := fmt.Sprintf(`
@@ -233,12 +250,12 @@ repo %s/%s
 	defer repoFile.Close()
 	_, err = repoFile.WriteString(content)
 	if err != nil {
-		zap.L().Error("write file failed when create repository")
+		zap.L().Error("write file failed when create repository", zap.Error(err))
 		return err
 	}
 	userFile, err := os.ReadFile(userFilePath)
 	if err != nil {
-		zap.L().Error("get failed when read user config file")
+		zap.L().Error("get failed when read user config file", zap.Error(err))
 		return err
 	}
 	lines := strings.Split(string(userFile), "\n")
@@ -271,31 +288,31 @@ repo %s/%s
 	var commitFiles []string
 	commitFiles = append(commitFiles, file1)
 	commitFiles = append(commitFiles, file2)
-	err = r.CommitAndPush(constants.GITOLITE_ADMIN_REPOSITORY_PATH, commitMessage, commitFiles)
+	err = r.CommitAndPush(ctx, constants.GITOLITE_ADMIN_REPOSITORY_PATH, commitMessage, commitFiles)
 	if err != nil {
-		zap.L().Error("get err when commit and push")
+		zap.L().Error("get err when commit and push", zap.Error(err))
 		return err
 	}
 	return nil
 }
 
 // 15
-func (r *GitoliteUtils) RemoveRepository(repoId int64, repoName string, isPrivate bool,
+func (r *GitoliteUtils) RemoveRepository(ctx context.Context, repoId int64, repoName string, isPrivate bool,
 	userId int64, userName string) error {
 	userFilePath, _ := r.GetUserFilePath(userId)
 	repoFilePath, _ := r.GetRepoFilePath(repoId)
 	if _, err := os.Stat(repoFilePath); err != nil {
-		zap.L().Warn("to be removed repository don't exist")
+		zap.L().Warn("to be removed repository don't exist", zap.Error(err))
 		return nil
 	}
 	err := os.Remove(repoFilePath)
 	if err != nil {
-		zap.L().Error("remove repository failed")
+		zap.L().Error("remove repository failed", zap.Error(err))
 		return err
 	}
 	userFile, err := os.ReadFile(userFilePath)
 	if err != nil {
-		zap.L().Error("can't open user config file")
+		zap.L().Error("can't open user config file", zap.Error(err))
 		return nil
 	}
 	lines := strings.Split(string(userFile), "\n")
@@ -312,16 +329,16 @@ func (r *GitoliteUtils) RemoveRepository(repoId int64, repoName string, isPrivat
 	content := strings.Join(lines, "\n")
 	err = os.WriteFile(userFilePath, []byte(content), 0644)
 	if err != nil {
-		zap.L().Error("get error when writing to user config file")
+		zap.L().Error("get error when writing to user config file", zap.Error(err))
 		return err
 	}
 	return nil
 }
 
-func (r *GitoliteUtils) AddCollaborator(repoId int64, collaboratorId int64) error {
+func (r *GitoliteUtils) AddCollaborator(ctx context.Context, repoId int64, collaboratorId int64) error {
 	repoFilePath, _ := r.GetRepoFilePath(repoId)
 	if _, err := os.Stat(repoFilePath); os.IsNotExist(err) {
-		zap.L().Error("file not exists")
+		zap.L().Error("file not exists", zap.Error(err))
 		return err
 	}
 	repoFile, _ := os.ReadFile(repoFilePath)
@@ -338,7 +355,7 @@ func (r *GitoliteUtils) AddCollaborator(repoId int64, collaboratorId int64) erro
 	if updated {
 		err := os.WriteFile(repoFilePath, []byte(content), 0644)
 		if err != nil {
-			zap.L().Error("write file failed")
+			zap.L().Error("write file failed", zap.Error(err))
 			return err
 		}
 	}
@@ -347,18 +364,18 @@ func (r *GitoliteUtils) AddCollaborator(repoId int64, collaboratorId int64) erro
 		constants.GITOLITE_ADMIN_REPOSITORY_PATH,
 		repoFilePath,
 	)
-	err := r.CommitAndPush(repoFilePath, commitMessage, []string{file1})
+	err := r.CommitAndPush(ctx, repoFilePath, commitMessage, []string{file1})
 	if err != nil {
-		zap.L().Error("get error when commit and push")
+		zap.L().Error("get error when commit and push", zap.Error(err))
 		return err
 	}
 	return nil
 }
 
-func (r *GitoliteUtils) RemoveCollaborator(repoId int64, collaboratorId int64) error {
+func (r *GitoliteUtils) RemoveCollaborator(ctx context.Context, repoId int64, collaboratorId int64) error {
 	repoFilePath, _ := r.GetRepoFilePath(repoId)
 	if _, err := os.Stat(repoFilePath); os.IsNotExist(err) {
-		zap.L().Error("repository config file not exists when Remove Collaborator")
+		zap.L().Error("repository config file not exists when Remove Collaborator", zap.Error(err))
 		return err
 	}
 	repoFile, _ := os.ReadFile(repoFilePath)
@@ -375,7 +392,7 @@ func (r *GitoliteUtils) RemoveCollaborator(repoId int64, collaboratorId int64) e
 		content := strings.Join(lines, "\n")
 		err := os.WriteFile(repoFilePath, []byte(content), 0644)
 		if err != nil {
-			zap.L().Error("write file failed when remove collaborator")
+			zap.L().Error("write file failed when remove collaborator", zap.Error(err))
 			return err
 		}
 		file1, _ := filepath.Rel(
@@ -383,9 +400,9 @@ func (r *GitoliteUtils) RemoveCollaborator(repoId int64, collaboratorId int64) e
 			repoFilePath,
 		)
 		commitMessage := fmt.Sprintf("Remove collaborator %d", collaboratorId)
-		err = r.CommitAndPush(repoFilePath, commitMessage, []string{file1})
+		err = r.CommitAndPush(ctx, repoFilePath, commitMessage, []string{file1})
 		if err != nil {
-			zap.L().Error("get error when commit and push in remving collaborator")
+			zap.L().Error("get error when commit and push in remving collaborator", zap.Error(err))
 			return err
 		}
 
@@ -393,10 +410,10 @@ func (r *GitoliteUtils) RemoveCollaborator(repoId int64, collaboratorId int64) e
 	return nil
 }
 
-func (r *GitoliteUtils) CommitAndPush(repoPath string, message string, files []string) error {
+func (r *GitoliteUtils) CommitAndPush(ctx context.Context, repoPath string, message string, files []string) error {
 	g, err := git.PlainOpen(repoPath)
 	if err != nil {
-		zap.L().Error(fmt.Sprintf("Error: %s. Error get when Open Git Repository", err.Error()))
+		zap.L().Error(fmt.Sprintf("Error: %s. Error get when Open Git Repository", err.Error()), zap.Error(err))
 		return err
 	}
 	workdir, err := g.Worktree()
@@ -405,6 +422,7 @@ func (r *GitoliteUtils) CommitAndPush(repoPath string, message string, files []s
 			fmt.Sprintf("Error: %s. Error get when get Repos workdir",
 				err.Error(),
 			),
+			zap.Error(err),
 		)
 		return err
 	}
@@ -415,6 +433,7 @@ func (r *GitoliteUtils) CommitAndPush(repoPath string, message string, files []s
 				fmt.Sprintf("Error: %s. Error get when add file",
 					err.Error(),
 				),
+				zap.Error(err),
 			)
 			return err
 		}
@@ -431,6 +450,7 @@ func (r *GitoliteUtils) CommitAndPush(repoPath string, message string, files []s
 			fmt.Sprintf("Error: %s. Error get when commit",
 				err.Error(),
 			),
+			zap.Error(err),
 		)
 		return err
 	}
@@ -440,7 +460,8 @@ func (r *GitoliteUtils) CommitAndPush(repoPath string, message string, files []s
 			fmt.Sprintf("Committed: %s", obj.Hash),
 		)
 	}
-	err = g.Push(&git.PushOptions{})
+
+	err = g.Push(&git.PushOptions{Auth: sshAuth})
 	if err != nil {
 		if err == git.NoErrAlreadyUpToDate {
 			zap.L().Info("Already up-to-data")
@@ -450,8 +471,38 @@ func (r *GitoliteUtils) CommitAndPush(repoPath string, message string, files []s
 			fmt.Sprintf("Error: %s. Error get when push",
 				err.Error(),
 			),
+			zap.Error(err),
 		)
 		return err
 	}
 	return nil
+}
+
+func expandHomeDir(path string) string {
+	if len(path) >= 2 && path[:2] == "~/" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+		return filepath.Join(home, path[2:])
+	}
+	return path
+}
+
+func newPublicKeyAuth(user, privateKeyPath string) (*gitssh.PublicKeys, error) {
+	key, err := os.ReadFile(expandHomeDir(privateKeyPath))
+	if err != nil {
+		zap.L().Error(err.Error())
+		return nil, err
+	}
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		zap.L().Error(err.Error())
+		return nil, err
+	}
+	auth := &gitssh.PublicKeys{
+		User:   user,
+		Signer: signer,
+	}
+	return auth, nil
 }
