@@ -5,6 +5,7 @@ import (
 	"go-gcs/model"
 
 	"gorm.io/gorm"
+	"go.uber.org/zap"
 )
 
 type UserDB struct {
@@ -18,6 +19,7 @@ func (r *UserDB) GetUserByUserId(ctx context.Context, userId int64) (*model.User
 		Where("id = ?", userId).
 		Scan(&userDO).Error
 	if err != nil {
+		zap.L().Error(err.Error())
 		return nil, err
 	}
 	return &userDO, nil
@@ -30,6 +32,7 @@ func (r *UserDB) GetUserByUserName(ctx context.Context, userName string) (*model
 		Where("username = ?", userName).
 		Scan(&userDO).Error
 	if err != nil {
+		zap.L().Error(err.Error())
 		return nil, err
 	}
 	return &userDO, nil
@@ -40,8 +43,9 @@ func (r *UserDB) GetUserNameById(ctx context.Context, userId int64) (string, err
 	err := r.DB.WithContext(ctx).
 		Model(model.UserDO{}).
 		Where("id = ?", userId).
-		Pluck("username", userName).Error
+		Pluck("username", &userName).Error
 	if err != nil {
+		zap.L().Error(err.Error())
 		return "", err
 	}
 	return userName, nil
@@ -52,8 +56,9 @@ func (r *UserDB) GetUserIdByUserName(ctx context.Context, userName string) (int6
 	err := r.DB.WithContext(ctx).
 		Model(model.UserDO{}).
 		Where("username = ?", userName).
-		Pluck("id", userId).Error
+		Pluck("id", &userId).Error
 	if err != nil {
+		zap.L().Error(err.Error())
 		return -1, err
 	}
 	return userId, nil
@@ -66,6 +71,7 @@ func (r *UserDB) UserExists(ctx context.Context, userName string) (bool, error) 
 		Where("username = ?", userName).
 		Scan(&userDO)
 	if tx.Error != nil {
+		zap.L().Error(tx.Error.Error())
 		return false, tx.Error
 	}
 	return tx.RowsAffected > 1, nil
@@ -75,6 +81,9 @@ func (r *UserDB) CreateUser(ctx context.Context, userDO *model.UserDO) error {
 	err := r.DB.WithContext(ctx).
 		Model(model.UserDO{}).
 		Create(userDO).Error
+	if err != nil {
+		zap.L().Error(err.Error())
+	}
 	return err
 }
 
@@ -84,6 +93,9 @@ func (r *UserDB) UpdateUser(ctx context.Context, updateUserMap map[string]interf
 		Model(model.UserDO{}).
 		Where("id = ?", userId).
 		Updates(updateUserMap).Error
+	if err != nil {
+		zap.L().Error(err.Error())
+	}
 	return err
 }
 
@@ -92,6 +104,9 @@ func (r *UserDB) DeleteUser(ctx context.Context, userId int64) error {
 		Model(model.UserDO{}).
 		Where("id = ?", userId).
 		Delete(model.UserDO{}).Error
+	if err != nil {
+		zap.L().Error(err.Error())
+	}
 	return err
 }
 
@@ -106,6 +121,7 @@ func (r *RepoDB) RepoExists(ctx context.Context, repoName string, userId int64) 
 		Where("repository_name = ? AND user_id = ?", repoName, userId).
 		Scan(&repoDO)
 	if tx.Error != nil {
+		zap.L().Error(tx.Error.Error())
 		return false, tx.Error
 	}
 	return tx.RowsAffected > 1, nil
@@ -116,7 +132,10 @@ func (r *RepoDB) GetRepoIdByName(ctx context.Context, repoName string, userId in
 	err := r.DB.WithContext(ctx).
 		Model(&model.RepoDO{}).
 		Where("user_id = ? AND repository_name = ?", userId, repoName).
-		Pluck("id", repoId).Error
+		Pluck("id", &repoId).Error
+	if err != nil {
+		zap.L().Error(err.Error())
+	}
 	return repoId, err
 }
 
@@ -128,6 +147,7 @@ func (r *RepoDB) GetRepoNameById(ctx context.Context, repoId int64) (string, err
 		Select("repository_name").
 		Scan(&res).Error
 	if err != nil {
+		zap.L().Error(err.Error())
 		return "", err
 	}
 	return res, nil
@@ -137,6 +157,9 @@ func (r *RepoDB) CreateRepo(ctx context.Context, repo *model.RepoDO, userId int6
 	err := r.DB.WithContext(ctx).
 		Model(model.RepoDO{}).
 		Create(repo).Error
+	if err != nil {
+		zap.L().Error(err.Error())
+	}
 	return err
 }
 
@@ -154,6 +177,7 @@ func (r *RepoDB) GetRepoByID(ctx context.Context, repoId int64) (*model.RepoDO, 
 		Where("id = ?", repoId).
 		Scan(&repoDO).Error
 	if err != nil {
+		zap.L().Error(err.Error())
 		return nil, err
 	}
 	return &repoDO, nil
@@ -167,6 +191,9 @@ func (r *SshKeyDB) Upload(ctx context.Context, sshKeyDO *model.SshKeyDO) error {
 	err := r.DB.WithContext(ctx).
 		Model(&model.SshKeyDO{}).
 		Create(sshKeyDO).Error
+	if err != nil {
+		zap.L().Error(err.Error())
+	}
 	return err
 }
 
@@ -174,6 +201,9 @@ func (r *SshKeyDB) Update(ctx context.Context, updateSshKey map[string]interface
 	err := r.DB.WithContext(ctx).
 		Model(model.SshKeyDO{}).
 		Where("id = ?", sshKeyId).Error
+	if err != nil {
+		zap.L().Error(err.Error())
+	}
 	return err
 }
 
@@ -184,6 +214,7 @@ func (r *SshKeyDB) SshKeyExists(ctx context.Context, sshKeyName string, userId i
 		Where("name = ? AND user_id = ?", sshKeyName, userId).
 		Scan(&sshKeyDO)
 	if tx.Error != nil {
+		zap.L().Error(tx.Error.Error())
 		return false, tx.Error
 	}
 	return tx.RowsAffected > 1, tx.Error
@@ -194,7 +225,10 @@ func (r *SshKeyDB) GetSshKeyIdBySshKeyName(ctx context.Context, sshKeyName strin
 	err := r.DB.WithContext(ctx).
 		Model(model.SshKeyDO{}).
 		Where("user_id = ? AND name = ?", userId, sshKeyName).
-		Pluck("id", sshKeyId).Error
+		Pluck("id", &sshKeyId).Error
+	if err != nil {
+		zap.L().Error(err.Error())
+	}
 	return sshKeyId, err
 }
 
@@ -203,7 +237,10 @@ func (r *SshKeyDB) GetSshKeyNameBySshKeyId(ctx context.Context, sshKeyId int64) 
 	err := r.DB.WithContext(ctx).
 		Model(model.SshKeyDO{}).
 		Where("id = ?", sshKeyId).
-		Pluck("name", sshKeyName).Error
+		Pluck("name", &sshKeyName).Error
+	if err != nil {
+		zap.L().Error(err.Error())
+	}
 	return sshKeyName, err
 }
 
@@ -212,5 +249,8 @@ func (r *SshKeyDB) DeleteSshKey(ctx context.Context, sshKeyName string, userId i
 		Model(model.SshKeyDO{}).
 		Where("user_id = ? AND name = ?", userId, sshKeyName).
 		Delete(model.SshKeyDO{}).Error
+	if err != nil {
+		zap.L().Error(err.Error())
+	}
 	return err
 }
