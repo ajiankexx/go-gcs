@@ -6,32 +6,38 @@ import (
 
 // temporarily don't add gmt_created, gmt_updated, gmt_deleted to UserDTO
 type UserDO struct {
-	ID        int64  `json:"id"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	AvatarURL string `json:"avarar_url"`
+	userTableName
+	Id        int64  `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	UserName  string `gorm:"column:username" json:"username"`
+	Email     string `gorm:"emeil" json:"email"`
+	Password  string `gorm:"password" json:"password"`
+	AvatarURL string `gorm:"avatar_url" json:"avarar_url"`
 }
 
 type UserDTO struct {
-	ID        int64  `json:"id"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	AvatarURL string `json:"avatar_url"`
+	userTableName
+	UserName  string `gorm:"column:username" json:"username"`
+	Email     string `gorm:"emeil" json:"email"`
+	Password  string `gorm:"password" json:"password"`
+	AvatarURL string `gorm:"avatar_url" json:"avarar_url"`
 }
 
 type UpdateUserDTO struct {
-	Username  *string `json:"username"`
-	Email     *string `json:"email"`
-	Password  *string `json:"password"`
-	AvatarURL *string `json:"avatar_url"`
+	userTableName
+	UserName  *string `gorm:"column:username" json:"username"`
+	Email     *string `gorm:"emeil" json:"email"`
+	Password  *string `gorm:"password" json:"password"`
+	AvatarURL *string `gorm:"avatar_url" json:"avarar_url"`
+}
+type UpdateUserDO  struct {
+	UpdateUserDTO
 }
 
 type UserVO struct {
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	AvatarURL string `json:"avatar_url"`
+	userTableName
+	UserName  string `gorm:"column:username" json:"username"`
+	Email     string `gorm:"emeil" json:"email"`
+	AvatarURL string `gorm:"avatar_url" json:"avarar_url"`
 }
 
 type UpdatePasswordWithOldPasswordDTO struct {

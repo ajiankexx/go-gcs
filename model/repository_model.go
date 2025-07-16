@@ -1,51 +1,41 @@
 package model
+import (
+)
 
-// 8:55
 type RepoDO struct {
-	ID        int64  `json:"id"`
-	RepoName  string `json:"repository_name"`
-	RepoDesc  string `json:"repository_description"`
-	IsPrivate bool   `json:"is_private"`
-	User_id   int64  `json:"user_id"`
-	Star      int    `json:"star"`
-	Fork      int    `json:"fork"`
-	Watcher   int    `json:"watcher"`
-	Https_url string `json:"https_url"`
-	Ssh_url   string `json:"ssh_url"`
+	repoTableName
+	Id        int64  `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	RepoName  string `gorm:"column:repository_name" json:"repository_name"`
+	RepoDesc  string `gorm:"column:repository_description" json:"repository_description"`
+	IsPrivate bool   `gorm:"column:is_private" json:"is_private"`
+	UserId    int64  `gorm:"column:user_id" json:"user_id"`
+	Star      int    `gorm:"column:star" json:"star"`
+	Fork      int    `gorm:"column:fork" json:"fork"`
+	Watcher   int    `gorm:"column:watcher" json:"watcher"`
+	HttpsUrl  string `gorm:"column:https_url" json:"https_url"`
+	SshUrl    string `gorm:"column:ssh_url" json:"ssh_url"`
 }
 
 type CreateRepoDTO struct {
-	RepoName  string `json:"repository_name"`
-	RepoDesc  string `json:"repository_description"`
-	IsPrivate bool   `json:"is_private"`
+	repoTableName
+	RepoName  string `gorm:"column:repository_name" json:"repository_name"`
+	RepoDesc  string `gorm:"column:repository_description" json:"repository_description"`
+	IsPrivate bool   `gorm:"column:is_private" json:"is_private"`
 }
 
 // embedding struct
 // temporarily, for each route and http method, define a struct to receive request data
 type UpdateRepoDTO struct {
-	ID        *int64  `json:"id"`
-	RepoName  *string `json:"repository_name"`
-	RepoDesc  *string `json:"repository_description"`
-	IsPrivate *bool   `json:"is_private"`
+	repoTableName
+	Id        *int64  `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
+	RepoName  *string `gorm:"column:repository_name" json:"repository_name"`
+	RepoDesc  *string `gorm:"column:repository_description" json:"repository_description"`
+	IsPrivate *bool   `gorm:"column:is_private" json:"is_private"`
 }
 
 type UpdateRepoDO struct {
-	ID        int64  `json:"id"`
-	RepoName  string `json:"repository_name"`
-	RepoDesc  string `json:"repository_description"`
-	IsPrivate bool   `json:"is_private"`
-	Https_url string `json:"https_url"`
-	Ssh_url   string `json:"ssh_url"`
-	User_id   int64  `json:"user_id"`
-}
-
-type GetRepoDTO struct {
-	UserId    int64  `json:"user_id"`
-	RepoName  string `json:"repository_name"`
-	RepoDesc  string `json:"repository_description"`
-	IsPrivate bool   `json:"is_private"`
-}
-
-type GetRepoByNameDTO struct {
-	RepoName string `json:"repository_name"`
+	repoTableName
+	UpdateRepoDTO
+	HttpsUrl *string `gorm:"column:https_url" json:"https_url"`
+	SshUrl   *string `gorm:"column:ssh_url" json:"ssh_url"`
 }
