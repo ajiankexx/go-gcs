@@ -4,6 +4,7 @@ import (
 	"go-gcs/appError"
 	"go-gcs/model"
 	"go-gcs/service"
+	"go-gcs/utils"
 
 	"errors"
 	"net/http"
@@ -37,7 +38,7 @@ func (r *UserHandler) ValidateUser(c *gin.Context, tgt any) error {
 // @Router /users/create [post]
 func (r *UserHandler) CreateUser(c *gin.Context) {
 	req := &model.UserDTO{}
-	err := r.ValidateUser(c, req)
+	err := utils.ValidateReq(c, req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -55,7 +56,7 @@ func (r *UserHandler) CreateUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"msg":  "user created",
-		"user": userVO,
+		"user": *userVO,
 	})
 }
 
