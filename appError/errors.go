@@ -23,6 +23,7 @@ var (
 )
 
 var (
+	ErrorWrongFormatRequestData = errors.New("request data has wrong format")
 	ErrorRepository = errors.New("error about Repository")
 	ErrorRepoNotExist = errors.New("repository not exist")
 	ErrorRepoAlreadyExist = errors.New("repository already exist")

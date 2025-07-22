@@ -1,13 +1,15 @@
 package service
 
 import (
+	"github.com/go-playground/validator/v10"
+	"github.com/jinzhu/copier"
 	"go-gcs/appError"
 	"go-gcs/constants"
 	"go-gcs/dao"
 	"go-gcs/model"
 	"go-gcs/mq"
 	"go-gcs/utils"
-	"github.com/jinzhu/copier"
+	"gorm.io/gorm"
 
 	"context"
 	"encoding/json"
@@ -20,35 +22,83 @@ var (
 )
 
 type UserService struct {
-	DAO *dao.UserDB
+	Validator         *validator.Validate
+	DAO           *dao.UserDB
+	GitoliteUtils utils.GitoliteUtils
 }
 
 func (r *UserService) CreateUser(ctx context.Context, req *model.UserDTO) (*model.UserVO, error) {
-	req.Password = utils.Encrypt(req.Password)
-
-	userDO, err := r.DAO.GetUserByUserName(ctx, req.UserName)
-	if err == nil {
-		var userVO model.UserVO
-		copier.Copy(userVO, userDO)
-		return &userVO, appError.ErrorUserAlreadyExists
-	} else if err != appError.ErrorUserNotFound {
-		return nil, err
+	err := r.Validator.Struct(req)
+	if err != nil {
+		utils.LogValidationErrors(err)
+		return nil, appError.ErrorWrongFormatRequestData
 	}
-	userDO = &model.UserDO{}
-	copier.Copy(userDO, req)
 
-	err = r.DAO.CreateUser(ctx, userDO)
+	req.Password = utils.Encrypt(req.Password)
+	var userVO *model.UserVO
+	err = r.DAO.WithTransaction(ctx, func(tx *gorm.DB) error {
+		exists, err := r.DAO.UserExists(ctx, tx, req.UserName)
+		if err != nil {
+			return err
+		}
+		if exists {
+			return appError.ErrorUserAlreadyExists
+		}
+		userDO := &model.UserDO{}
+		_ = copier.Copy(userDO, req)
+		if err := r.DAO.CreateUser(ctx, tx, userDO); err != nil {
+			return err
+		}
+		userId, err := r.DAO.GetUserIdByUserName(ctx, tx, req.UserName)
+		if err != nil {
+			return err
+		}
+		userVO = &model.UserVO{}
+		_ = copier.Copy(userVO, req)
+		r.GitoliteUtils.InitUserConfig(userId)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	return utils.ConvertUserDTOToUserVO(req), nil
+	return userVO, nil
 }
+
+// func (r *UserService) CreateUser(ctx context.Context, req *model.UserDTO) (*model.UserVO, error) {
+// 	req.Password = utils.Encrypt(req.Password)
+//
+//
+//
+// 	exists, _ := r.DAO.UserExists(ctx, nil, req.UserName)
+// 	if exists {
+// 		return nil, appError.ErrorUserAlreadyExists
+// 	}
+//
+// 	userDO := &model.UserDO{}
+// 	copier.Copy(userDO, req)
+//
+// 	err := r.DAO.CreateUser(ctx, nil, userDO)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	userId, _ := r.DAO.GetUserIdByUserName(ctx, nil, req.UserName)
+// 	zap.L().Info(fmt.Sprintf("userId is: %d", userId))
+// 	r.GitoliteUtils.InitUserConfig(userId)
+// 	userVO := &model.UserVO{}
+// 	copier.Copy(userVO, req)
+// 	return userVO, nil
+// }
 
 //TODO: temporally only write how to send and process verify code request,
 // however, currently not consider about what should be returned in this request.
 
 // maybe, in go, for front-end received data, we should use a stuct whose component var are pointer.
 func (r *UserService) UpdateUser(ctx context.Context, req *model.UpdateUserDTO, id int64) (*model.UserVO, error) {
+	err := r.Validator.Struct(req)
+	if err != nil {
+		utils.LogValidationErrors(err)
+		return nil, appError.ErrorWrongFormatRequestData
+	}
 	if req.UserName != nil {
 		if *req.UserName == "" {
 			return nil, errors.New("username can't be empty")
@@ -65,7 +115,7 @@ func (r *UserService) UpdateUser(ctx context.Context, req *model.UpdateUserDTO, 
 		if *req.AvatarURL == "" {
 			return nil, errors.New("AvatarURL can't be empty")
 		}
-		
+
 	}
 
 	if req.Password != nil {
@@ -75,18 +125,18 @@ func (r *UserService) UpdateUser(ctx context.Context, req *model.UpdateUserDTO, 
 		}
 	}
 
-	userDO, err := r.DAO.GetUserByUserId(ctx, id)
+	userDO, err := r.DAO.GetUserByUserId(ctx, nil, id)
 	if err != nil {
 		return nil, err
 	}
 	updateUserDO := model.UpdateUserDO{UpdateUserDTO: *req}
 	updateUserMap := utils.StructToMap(updateUserDO, "gorm")
 	userId, _ := utils.ReadFromContext[int64](ctx, "userId")
-	err = r.DAO.UpdateUser(ctx, updateUserMap, userId)
+	err = r.DAO.UpdateUser(ctx, nil, updateUserMap, userId)
 	if err != nil {
 		return nil, err
 	}
-	userDO, err = r.DAO.GetUserByUserId(ctx, userId)
+	userDO, err = r.DAO.GetUserByUserId(ctx, nil, userId)
 	userVO := model.UserVO{}
 	copier.Copy(userVO, userDO)
 	return &userVO, nil
@@ -94,7 +144,12 @@ func (r *UserService) UpdateUser(ctx context.Context, req *model.UpdateUserDTO, 
 
 // all data received from front-end maybe processed with a struct whose var is pointer, not value
 func (r *UserService) UpdatePasswordWithOldPassword(ctx context.Context, req *model.UpdatePasswordWithOldPasswordDTO, id int64) error {
-	user, err := r.DAO.GetUserByUserId(ctx, id)
+	err := r.Validator.Struct(req)
+	if err != nil {
+		utils.LogValidationErrors(err)
+		return appError.ErrorWrongFormatRequestData
+	}
+	user, err := r.DAO.GetUserByUserId(ctx, nil, id)
 	if err != nil {
 		return err
 	}
@@ -113,7 +168,7 @@ func (r *UserService) UpdatePasswordWithOldPassword(ctx context.Context, req *mo
 	updateUserDO := model.UpdateRepoDO{}
 	updateUserDO.Password = utils.LiteralPtr(utils.Encrypt(req.NewPassword))
 	updateUserMap := utils.StructToMap(updateUserDO, "gorm")
-	err = r.DAO.UpdateUser(ctx, updateUserMap, userId)
+	err = r.DAO.UpdateUser(ctx, nil, updateUserMap, userId)
 	if err != nil {
 		return err
 	}
@@ -162,6 +217,11 @@ func (r *UserService) SendVerificationCode(ctx context.Context, req *model.SendE
 }
 
 func (r *UserService) UploadEmailAndVerifyCode(ctx context.Context, req *model.EmailAndVerifyCodeDTO) error {
+	err := r.Validator.Struct(req)
+	if err != nil {
+		utils.LogValidationErrors(err)
+		return appError.ErrorWrongFormatRequestData
+	}
 	rdb := utils.GetRedisConn()
 	redisKey := "verify_code:" + req.Email
 	n, err := rdb.Exists(ctx, redisKey).Result()

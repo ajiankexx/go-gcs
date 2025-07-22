@@ -5,6 +5,7 @@ import (
 	"go-gcs/model"
 	"go-gcs/utils"
 	"go.uber.org/zap"
+	"github.com/go-playground/validator/v10"
 
 	"context"
 
@@ -12,11 +13,16 @@ import (
 )
 
 type SshKeyService struct{
+	Validator *validator.Validate
 	SshKeyDAO *dao.SshKeyDB
 }
 
 func (r *SshKeyService) UploadSshKey(ctx context.Context, req *model.SshKeyDTO, userId int64) error {
-	exist, err := r.SshKeyDAO.SshKeyExists(ctx, req.Name, req.UserId)
+	if err := r.Validator.Struct(req); err != nil {
+		utils.LogValidationErrors(err)
+		return appError.ErrorWrongFormatRequestData
+	}
+	exist, err := r.SshKeyDAO.SshKeyExists(ctx, nil, req.Name, req.UserId)
 	if err != nil {
 		return err
 	}
@@ -25,7 +31,7 @@ func (r *SshKeyService) UploadSshKey(ctx context.Context, req *model.SshKeyDTO, 
 	}
 	var sshKeyDO = &model.SshKeyDO{}
 	copier.Copy(sshKeyDO, req)
-	err = r.SshKeyDAO.Upload(ctx, sshKeyDO)
+	err = r.SshKeyDAO.Upload(ctx, nil, sshKeyDO)
 	if err != nil {
 		return err
 	}
@@ -33,13 +39,17 @@ func (r *SshKeyService) UploadSshKey(ctx context.Context, req *model.SshKeyDTO, 
 }
 
 func (r *SshKeyService) UpdateSshKey(ctx context.Context, req *model.UpdateSshKeyDTO) error {
+	if err := r.Validator.Struct(req); err != nil {
+		utils.LogValidationErrors(err)
+		return appError.ErrorWrongFormatRequestData
+	}
 	userId, _ := utils.ReadFromContext[int64](ctx, "userId")
 	var exists bool
-	exists, _ = r.SshKeyDAO.SshKeyExists(ctx, *req.OldName, userId)
+	exists, _ = r.SshKeyDAO.SshKeyExists(ctx, nil, *req.OldName, userId)
 	if !exists {
 		return appError.ErrorSshKeyNotExist
 	}
-	sshKeyId, err := r.SshKeyDAO.GetSshKeyIdBySshKeyName(ctx, *req.OldName, userId)
+	sshKeyId, err := r.SshKeyDAO.GetSshKeyIdBySshKeyName(ctx, nil, *req.OldName, userId)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err
@@ -48,7 +58,7 @@ func (r *SshKeyService) UpdateSshKey(ctx context.Context, req *model.UpdateSshKe
 	updateSshDO.Name = *req.NewName
 	updateSshDO.PublicKey = *req.NewPublicKey
 	updateSshKeyMap := utils.StructToMap(updateSshDO, "gorm")
-	err = r.SshKeyDAO.Update(ctx, updateSshKeyMap, sshKeyId)
+	err = r.SshKeyDAO.Update(ctx, nil, updateSshKeyMap, sshKeyId)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err
@@ -57,13 +67,17 @@ func (r *SshKeyService) UpdateSshKey(ctx context.Context, req *model.UpdateSshKe
 }
 
 func (r *SshKeyService) DeleteSshKey(ctx context.Context, req *model.SshKeyDTO) error {
+	if err := r.Validator.Struct(req); err != nil {
+		utils.LogValidationErrors(err)
+		return appError.ErrorWrongFormatRequestData
+	}
 	userId, _ := utils.ReadFromContext[int64](ctx, "userId")
 	sshKeyName := req.Name
-	exists, _ := r.SshKeyDAO.SshKeyExists(ctx, sshKeyName, userId)
+	exists, _ := r.SshKeyDAO.SshKeyExists(ctx, nil, sshKeyName, userId)
 	if !exists {
 		return appError.ErrorSshKeyNotExist
 	}
-	err := r.SshKeyDAO.DeleteSshKey(ctx, sshKeyName, userId)
+	err := r.SshKeyDAO.DeleteSshKey(ctx, nil, sshKeyName, userId)
 	if err != nil {
 		zap.L().Error(err.Error())
 		return err

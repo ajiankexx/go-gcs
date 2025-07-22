@@ -1,6 +1,6 @@
 package model
-import (
-)
+
+import ()
 
 type RepoDO struct {
 	repoTableName
@@ -18,18 +18,23 @@ type RepoDO struct {
 
 type CreateRepoDTO struct {
 	repoTableName
-	RepoName  string `gorm:"column:repository_name" json:"repository_name"`
-	RepoDesc  string `gorm:"column:repository_description" json:"repository_description"`
-	IsPrivate bool   `gorm:"column:is_private" json:"is_private"`
+	RepoName string `gorm:"column:repository_name" 
+					json:"repository_name" 
+					validate:"required,min=1,max=255"`
+	RepoDesc  string `gorm:"column:repository_description" 
+					json:"repository_description" 
+					validate:"max=1000"`
+	IsPrivate bool   `gorm:"column:is_private" json:"is_private" validate:"required"`
 }
 
-// embedding struct
-// temporarily, for each route and http method, define a struct to receive request data
 type UpdateRepoDTO struct {
 	repoTableName
-	Id        *int64  `gorm:"column:id;primaryKey;autoIncrement" json:"id"`
-	RepoName  *string `gorm:"column:repository_name" json:"repository_name"`
-	RepoDesc  *string `gorm:"column:repository_description" json:"repository_description"`
+	Id        *int64  `gorm:"column:id;primaryKey;autoIncrement" json:"id" 
+						validate:"required"`
+	RepoName  *string `gorm:"column:repository_name" json:"repository_name" 
+						validate:"omitempty,min=1,max=255"`
+	RepoDesc  *string `gorm:"column:repository_description" json:"repository_description" 
+						validate:"omitempty,max=1000"`
 	IsPrivate *bool   `gorm:"column:is_private" json:"is_private"`
 }
 

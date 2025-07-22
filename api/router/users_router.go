@@ -7,6 +7,7 @@ import (
 	"go-gcs/service"
 	"go-gcs/utils"
 	"go-gcs/constants"
+	"github.com/go-playground/validator/v10"
 	
 	"github.com/gin-gonic/gin"
 )
@@ -16,7 +17,7 @@ var LOGIN_API_PREFIX = constants.LOGIN_API_PREFIX
 
 func SetupUserRoutes(r *gin.RouterGroup) {
 	userDAO := &dao.UserDB{DB: utils.GetGormDB()}
-	userService := &service.UserService{DAO: userDAO}
+	userService := &service.UserService{DAO: userDAO, Validator: validator.New()}
 	userHandler := &handler.UserHandler{Service: userService}
 
 	users := r.Group(USER_API_PREFIX)

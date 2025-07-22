@@ -5,6 +5,9 @@ import (
 	"reflect"
 	"context"
 	"errors"
+	"fmt"
+	"github.com/go-playground/validator/v10"
+	"go.uber.org/zap"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,6 +22,21 @@ func ValidateReq(c *gin.Context, tgt any) error {
 		return errors.New("TypeError")
 	}
 	return c.ShouldBindBodyWithJSON(tgt)
+}
+
+func LogValidationErrors(err error) {
+	if validationErrs, ok := err.(validator.ValidationErrors); ok {
+		for _, fieldErr := range validationErrs {
+			zap.L().Error("validation failed",
+				zap.String("field", fieldErr.Field()),
+				zap.String("tag", fieldErr.Tag()),
+				zap.String("actual_value", fmt.Sprintf("%v", fieldErr.Value())),
+				zap.String("error", fieldErr.Error()),
+			)
+		}
+	} else {
+		zap.L().Error("unexpected validation error", zap.Error(err))
+	}
 }
 
 func ReadFromContext[T any](ctx context.Context, key any) (T, bool) {

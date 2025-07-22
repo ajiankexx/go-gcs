@@ -9,6 +9,7 @@ import (
 	"go-gcs/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 var REPO_API_PROFIX = constants.REPO_API_PREFIX
@@ -16,7 +17,10 @@ var REPO_API_PROFIX = constants.REPO_API_PREFIX
 func SetupRepositoryRoutes(r *gin.RouterGroup) {
 	repoDAO := &dao.RepoDB{DB: utils.GetGormDB()}
 	userDAO := &dao.UserDB{DB: utils.GetGormDB()}
-	repoService := &service.RepoService{RepoDAO: repoDAO, UserDAO: userDAO}
+	repoService := &service.RepoService{
+		RepoDAO:   repoDAO,
+		UserDAO:   userDAO,
+		Validator: validator.New()}
 	repoHandler := &handler.RepoHandler{Service: repoService}
 
 	repo := r.Group(REPO_API_PROFIX)
