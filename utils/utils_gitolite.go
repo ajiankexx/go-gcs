@@ -108,6 +108,9 @@ func (r *GitoliteUtils) AddSshKey(ctx context.Context, sshKeyId int64, sshKey st
 		return appError.ErrorCreateFileFailed
 	}
 	defer sshKeyFile.Close()
+	sshKey = strings.TrimPrefix(sshKey, "\n")
+	sshKey = strings.TrimSuffix(sshKey, "\n")
+	sshKey = sshKey + "\n"
 	sshKeyFile.WriteString(sshKey)
 
 	userFile, err := os.ReadFile(userFilePath)
