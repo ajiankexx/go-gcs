@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"os/exec"
+	"bytes"
 
 	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"go-gcs/appError"
@@ -16,8 +18,9 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v6"
+	// "github.com/go-git/go-git/v6/config"
+	"github.com/go-git/go-git/v6/plumbing/object"
 )
 
 type GitoliteUtils struct {
@@ -28,11 +31,13 @@ var (
 )
 
 func init() {
-	zap.L().Info("init in gitolite executed")
 	os.MkdirAll(expandHomeDir(constants.GITOLITE_USER_CONF_DIR_PATH), 0755)
 	os.MkdirAll(expandHomeDir(constants.GITOLITE_REPOSITORY_CONF_DIR_PATH), 0755)
 	os.MkdirAll(expandHomeDir(constants.GITOLITE_KEY_DIR_PATH), 0755)
+	mustRunSSHAgent()
+	mustAddKey()
 	sshAuth, _ = newPublicKeyAuth("git", constants.GIT_PRIVATE_KEY)
+
 }
 
 func (r *GitoliteUtils) InitUserConfig(userId int64) error {
@@ -276,6 +281,9 @@ repo %s/%s
 	if updated {
 		os.WriteFile(userFilePath, []byte(content), 0644)
 	}
+	// debug
+	// zap.L().Info("commit was hacked successful")
+	// return nil
 	commitMessage := fmt.Sprintf("Create repository %s/%s", userName, repoName)
 	file1, _ := filepath.Rel(
 		constants.GITOLITE_ADMIN_REPOSITORY_PATH,
@@ -461,7 +469,8 @@ func (r *GitoliteUtils) CommitAndPush(ctx context.Context, repoPath string, mess
 		)
 	}
 
-	err = g.Push(&git.PushOptions{Auth: sshAuth})
+	err = g.Push(&git.PushOptions{})
+
 	if err != nil {
 		if err == git.NoErrAlreadyUpToDate {
 			zap.L().Info("Already up-to-data")
@@ -505,4 +514,35 @@ func newPublicKeyAuth(user, privateKeyPath string) (*gitssh.PublicKeys, error) {
 		Signer: signer,
 	}
 	return auth, nil
+}
+
+func mustRunSSHAgent() {
+	cmd := exec.Command("ssh-agent", "-s")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "启动 ssh-agent 失败: %v\n", err)
+		os.Exit(1)
+	}
+
+	// 解析 ssh-agent 输出，设置环境变量
+	for _, line := range strings.Split(out.String(), "\n") {
+		if strings.Contains(line, "SSH_AUTH_SOCK") || strings.Contains(line, "SSH_AGENT_PID") {
+			parts := strings.SplitN(line, ";", 2)
+			if kv := strings.SplitN(parts[0], "=", 2); len(kv) == 2 {
+				os.Setenv(kv[0], kv[1])
+			}
+		}
+	}
+}
+
+func mustAddKey() {
+	cmd := exec.Command("ssh-add", os.ExpandEnv("$HOME/.ssh/id_rsa"))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "添加私钥失败: %v\n", err)
+		os.Exit(1)
+	}
 }
