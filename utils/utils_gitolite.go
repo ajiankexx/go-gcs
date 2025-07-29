@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -21,6 +22,7 @@ import (
 
 	"github.com/go-git/go-git/v6"
 	// "github.com/go-git/go-git/v6/config"
+	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/object"
 )
 
@@ -29,7 +31,9 @@ type GitoliteUtils struct {
 }
 
 var (
-	sshAuth *gitssh.PublicKeys
+	sshAuth        *gitssh.PublicKeys
+	msgReset       = "trying to reset commit and worktree"
+	msgResetFailed = "failed to reset commit and worktree"
 )
 
 func init() {
@@ -45,6 +49,7 @@ func init() {
 func (r *GitoliteUtils) InitUserConfig(ctx context.Context, userId int64) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+	headHash := getHeadHash(constants.GITOLITE_ADMIN_REPOSITORY_PATH)
 
 	userFileName := fmt.Sprintf("%d.conf", userId)
 	userConfPath := expandHomeDir(path.Join(constants.GITOLITE_USER_CONF_DIR_PATH, userFileName))
@@ -85,6 +90,11 @@ repo @%d_public_repo
 	)
 	if err != nil {
 		zap.L().Error("failed to init user config in gitolite", zap.Error(err))
+		zap.L().Info(msgReset)
+		err = resetHead(constants.GITOLITE_ADMIN_REPOSITORY_PATH, headHash)
+		if err != nil {
+			log.Fatal(msgResetFailed)
+		}
 		return err
 	}
 	return nil
@@ -114,6 +124,7 @@ func (r *GitoliteUtils) GetRepoFilePath(repoId int64) (string, error) {
 func (r *GitoliteUtils) AddSshKey(ctx context.Context, sshKeyId int64, sshKey string, userId int64) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+	headHash := getHeadHash(constants.GITOLITE_ADMIN_REPOSITORY_PATH)
 
 	sshKeyFilePath, _ := r.GetSshKeyFIlePath(sshKeyId)
 	userFilePath, err := r.GetUserFilePath(userId)
@@ -178,6 +189,11 @@ func (r *GitoliteUtils) AddSshKey(ctx context.Context, sshKeyId int64, sshKey st
 	)
 	if err != nil {
 		zap.L().Error(fmt.Sprintf("Error: %s. Error get when run CommitAndPush.", err.Error()), zap.Error(err))
+		zap.L().Info(msgReset)
+		err = resetHead(constants.GITOLITE_ADMIN_REPOSITORY_PATH, headHash)
+		if err != nil {
+			log.Fatal(msgResetFailed)
+		}
 	}
 	return nil
 }
@@ -185,6 +201,7 @@ func (r *GitoliteUtils) AddSshKey(ctx context.Context, sshKeyId int64, sshKey st
 func (r *GitoliteUtils) RemoveSshKey(ctx context.Context, sshKeyId int64, userId int64) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+	headHash := getHeadHash(constants.GITOLITE_ADMIN_REPOSITORY_PATH)
 
 	sshKeyFilePath, _ := r.GetSshKeyFIlePath(sshKeyId)
 	userFilePath, _ := r.GetUserFilePath(userId)
@@ -239,6 +256,11 @@ func (r *GitoliteUtils) RemoveSshKey(ctx context.Context, sshKeyId int64, userId
 	)
 	if err != nil {
 		zap.L().Error(fmt.Sprintf("Error: %s. Error get when run CommitAndPush.", err.Error()), zap.Error(err))
+		zap.L().Info(msgReset)
+		err = resetHead(constants.GITOLITE_ADMIN_REPOSITORY_PATH, headHash)
+		if err != nil {
+			log.Fatal(msgResetFailed)
+		}
 	}
 	return nil
 }
@@ -248,6 +270,7 @@ func (r *GitoliteUtils) RemoveSshKey(ctx context.Context, sshKeyId int64, userId
 func (r *GitoliteUtils) UpdateSshKey(sshKeyId int64, sshKey string) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+	headHash := getHeadHash(constants.GITOLITE_ADMIN_REPOSITORY_PATH)
 
 	sshKeyFilePath, _ := r.GetSshKeyFIlePath(sshKeyId)
 	if _, err := os.Stat(sshKeyFilePath); err != nil {
@@ -257,6 +280,11 @@ func (r *GitoliteUtils) UpdateSshKey(sshKeyId int64, sshKey string) error {
 	err := os.WriteFile(sshKeyFilePath, []byte(sshKey), 0644)
 	if err != nil {
 		zap.L().Error("update ssh key failed", zap.Error(err))
+		zap.L().Info(msgReset)
+		err = resetHead(constants.GITOLITE_ADMIN_REPOSITORY_PATH, headHash)
+		if err != nil {
+			log.Fatal(msgResetFailed)
+		}
 		return err
 	}
 	return nil
@@ -268,6 +296,7 @@ func (r *GitoliteUtils) CreateRepository(ctx context.Context, repoId int64, repo
 	userId int64, userName string) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+	headHash := getHeadHash(constants.GITOLITE_ADMIN_REPOSITORY_PATH)
 
 	userFilePath, _ := r.GetUserFilePath(userId)
 	repoFilePath, _ := r.GetRepoFilePath(repoId)
@@ -332,6 +361,11 @@ repo %s/%s
 	err = r.CommitAndPush(ctx, constants.GITOLITE_ADMIN_REPOSITORY_PATH, commitMessage, commitFiles)
 	if err != nil {
 		zap.L().Error("get err when commit and push", zap.Error(err))
+		zap.L().Info(msgReset)
+		err = resetHead(constants.GITOLITE_ADMIN_REPOSITORY_PATH, headHash)
+		if err != nil {
+			log.Fatal(msgResetFailed)
+		}
 		return err
 	}
 	return nil
@@ -342,6 +376,7 @@ func (r *GitoliteUtils) RemoveRepository(ctx context.Context, repoId int64, repo
 	userId int64, userName string) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+	headHash := getHeadHash(constants.GITOLITE_ADMIN_REPOSITORY_PATH)
 
 	userFilePath, _ := r.GetUserFilePath(userId)
 	repoFilePath, _ := r.GetRepoFilePath(repoId)
@@ -374,6 +409,11 @@ func (r *GitoliteUtils) RemoveRepository(ctx context.Context, repoId int64, repo
 	err = os.WriteFile(userFilePath, []byte(content), 0644)
 	if err != nil {
 		zap.L().Error("get error when writing to user config file", zap.Error(err))
+		zap.L().Info(msgReset)
+		err = resetHead(constants.GITOLITE_ADMIN_REPOSITORY_PATH, headHash)
+		if err != nil {
+			log.Fatal(msgResetFailed)
+		}
 		return err
 	}
 	return nil
@@ -382,6 +422,7 @@ func (r *GitoliteUtils) RemoveRepository(ctx context.Context, repoId int64, repo
 func (r *GitoliteUtils) AddCollaborator(ctx context.Context, repoId int64, collaboratorId int64) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+	headHash := getHeadHash(constants.GITOLITE_ADMIN_REPOSITORY_PATH)
 
 	repoFilePath, _ := r.GetRepoFilePath(repoId)
 	if _, err := os.Stat(repoFilePath); os.IsNotExist(err) {
@@ -414,6 +455,11 @@ func (r *GitoliteUtils) AddCollaborator(ctx context.Context, repoId int64, colla
 	err := r.CommitAndPush(ctx, repoFilePath, commitMessage, []string{file1})
 	if err != nil {
 		zap.L().Error("get error when commit and push", zap.Error(err))
+		zap.L().Info(msgReset)
+		err = resetHead(constants.GITOLITE_ADMIN_REPOSITORY_PATH, headHash)
+		if err != nil {
+			log.Fatal(msgResetFailed)
+		}
 		return err
 	}
 	return nil
@@ -422,6 +468,7 @@ func (r *GitoliteUtils) AddCollaborator(ctx context.Context, repoId int64, colla
 func (r *GitoliteUtils) RemoveCollaborator(ctx context.Context, repoId int64, collaboratorId int64) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
+	headHash := getHeadHash(constants.GITOLITE_ADMIN_REPOSITORY_PATH)
 
 	repoFilePath, _ := r.GetRepoFilePath(repoId)
 	if _, err := os.Stat(repoFilePath); os.IsNotExist(err) {
@@ -453,6 +500,11 @@ func (r *GitoliteUtils) RemoveCollaborator(ctx context.Context, repoId int64, co
 		err = r.CommitAndPush(ctx, repoFilePath, commitMessage, []string{file1})
 		if err != nil {
 			zap.L().Error("get error when commit and push in remving collaborator", zap.Error(err))
+			zap.L().Info(msgReset)
+			err = resetHead(constants.GITOLITE_ADMIN_REPOSITORY_PATH, headHash)
+			if err != nil {
+				log.Fatal(msgResetFailed)
+			}
 			return err
 		}
 
@@ -587,4 +639,35 @@ func mustAddKey() {
 		fmt.Fprintf(os.Stderr, "添加私钥失败: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func getHeadHash(repoPath string) plumbing.Hash {
+	repo, _ := git.PlainOpen(expandHomeDir(repoPath))
+	head, _ := repo.Head()
+	hash := head.Hash()
+	return hash
+}
+
+func resetHead(repoPath string, hash plumbing.Hash) error {
+	repo, _ := git.PlainOpen(expandHomeDir(repoPath))
+	head, err := repo.Head()
+	if err != nil {
+		return err
+	}
+	err = repo.Storer.SetReference(plumbing.NewHashReference(head.Name(), hash))
+	if err != nil {
+		return err
+	}
+	worktree, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+	err = worktree.Checkout(&git.CheckoutOptions{
+		Hash:  hash,
+		Force: true,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
