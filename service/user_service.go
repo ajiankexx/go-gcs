@@ -55,7 +55,7 @@ func (r *UserService) CreateUser(ctx context.Context, req *model.UserDTO) (*mode
 		}
 		userVO = &model.UserVO{}
 		_ = copier.Copy(userVO, req)
-		r.GitoliteUtils.InitUserConfig(userId)
+		r.GitoliteUtils.InitUserConfig(ctx, userId)
 		return nil
 	})
 	if err != nil {

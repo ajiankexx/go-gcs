@@ -1,16 +1,17 @@
 package utils
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
-	"os/exec"
-	"bytes"
 
 	gitssh "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"go-gcs/appError"
@@ -24,6 +25,7 @@ import (
 )
 
 type GitoliteUtils struct {
+	lock sync.Mutex
 }
 
 var (
@@ -40,7 +42,10 @@ func init() {
 
 }
 
-func (r *GitoliteUtils) InitUserConfig(userId int64) error {
+func (r *GitoliteUtils) InitUserConfig(ctx context.Context, userId int64) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	userFileName := fmt.Sprintf("%d.conf", userId)
 	userConfPath := expandHomeDir(path.Join(constants.GITOLITE_USER_CONF_DIR_PATH, userFileName))
 
@@ -69,6 +74,19 @@ repo @%d_public_repo
 		zap.L().Error(err.Error())
 		return appError.ErrorWriteFileFailed
 	}
+	commitMessage := fmt.Sprintf("create user %d", userId)
+	commitFiles := []string{}
+	file1, _ := filepath.Rel(constants.GITOLITE_ADMIN_REPOSITORY_PATH, userConfPath)
+	commitFiles = append(commitFiles, file1)
+	err = r.CommitAndPush(
+		ctx, constants.GITOLITE_ADMIN_REPOSITORY_PATH,
+		commitMessage,
+		commitFiles,
+	)
+	if err != nil {
+		zap.L().Error("failed to init user config in gitolite", zap.Error(err))
+		return err
+	}
 	return nil
 }
 
@@ -94,6 +112,9 @@ func (r *GitoliteUtils) GetRepoFilePath(repoId int64) (string, error) {
 }
 
 func (r *GitoliteUtils) AddSshKey(ctx context.Context, sshKeyId int64, sshKey string, userId int64) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	sshKeyFilePath, _ := r.GetSshKeyFIlePath(sshKeyId)
 	userFilePath, err := r.GetUserFilePath(userId)
 
@@ -162,6 +183,9 @@ func (r *GitoliteUtils) AddSshKey(ctx context.Context, sshKeyId int64, sshKey st
 }
 
 func (r *GitoliteUtils) RemoveSshKey(ctx context.Context, sshKeyId int64, userId int64) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	sshKeyFilePath, _ := r.GetSshKeyFIlePath(sshKeyId)
 	userFilePath, _ := r.GetUserFilePath(userId)
 	if _, err := os.Stat(sshKeyFilePath); err != nil {
@@ -222,6 +246,9 @@ func (r *GitoliteUtils) RemoveSshKey(ctx context.Context, sshKeyId int64, userId
 // not consider race condition
 // data race, critical section, mutex, synchronization, atomic operation
 func (r *GitoliteUtils) UpdateSshKey(sshKeyId int64, sshKey string) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	sshKeyFilePath, _ := r.GetSshKeyFIlePath(sshKeyId)
 	if _, err := os.Stat(sshKeyFilePath); err != nil {
 		zap.L().Error("no ssh key exists", zap.Error(err))
@@ -239,6 +266,9 @@ func (r *GitoliteUtils) UpdateSshKey(sshKeyId int64, sshKey string) error {
 // 36
 func (r *GitoliteUtils) CreateRepository(ctx context.Context, repoId int64, repoName string, isPrivate bool,
 	userId int64, userName string) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	userFilePath, _ := r.GetUserFilePath(userId)
 	repoFilePath, _ := r.GetRepoFilePath(repoId)
 	if _, err := os.Stat(repoFilePath); err == nil {
@@ -310,6 +340,9 @@ repo %s/%s
 // 15
 func (r *GitoliteUtils) RemoveRepository(ctx context.Context, repoId int64, repoName string, isPrivate bool,
 	userId int64, userName string) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	userFilePath, _ := r.GetUserFilePath(userId)
 	repoFilePath, _ := r.GetRepoFilePath(repoId)
 	if _, err := os.Stat(repoFilePath); err != nil {
@@ -347,6 +380,9 @@ func (r *GitoliteUtils) RemoveRepository(ctx context.Context, repoId int64, repo
 }
 
 func (r *GitoliteUtils) AddCollaborator(ctx context.Context, repoId int64, collaboratorId int64) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	repoFilePath, _ := r.GetRepoFilePath(repoId)
 	if _, err := os.Stat(repoFilePath); os.IsNotExist(err) {
 		zap.L().Error("file not exists", zap.Error(err))
@@ -384,6 +420,9 @@ func (r *GitoliteUtils) AddCollaborator(ctx context.Context, repoId int64, colla
 }
 
 func (r *GitoliteUtils) RemoveCollaborator(ctx context.Context, repoId int64, collaboratorId int64) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
 	repoFilePath, _ := r.GetRepoFilePath(repoId)
 	if _, err := os.Stat(repoFilePath); os.IsNotExist(err) {
 		zap.L().Error("repository config file not exists when Remove Collaborator", zap.Error(err))
